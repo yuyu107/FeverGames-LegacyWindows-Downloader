@@ -1,0 +1,19 @@
+# Local diagnostics / generated output
+ZeroStart_v1.2_Diagnostic_Result/
+Integrated*_Result/
+*.log
+*.tmp
+*.partial
+
+# Private runtime data - never commit
+PRIVATE_manifest_response.json
+*.seckey
+*.token
+
+# Third-party decoder binaries are intentionally not stored here
+zstd.exe
+7z.exe
+
+# Windows
+Thumbs.db
+Desktop.ini
