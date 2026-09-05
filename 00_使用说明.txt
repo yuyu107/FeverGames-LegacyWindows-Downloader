@@ -1,0 +1,11 @@
+FeverGames Legacy Windows Downloader v1.3.0
+
+Windows 7 SP1 x64 使用：
+1. 完全退出 FeverGames。
+2. 确保电脑有支持 .zst 的 7-Zip，或将可用的 zstd.exe 放到 tools\zstd.exe。
+3. 双击 01_Zero_Start_One_Click_Install.cmd。
+4. 安装后可运行 02_Check_Status.cmd 检查状态。
+5. 如需恢复官方文件，运行 03_Restore_Official_Original.cmd。
+
+已验证 FeverGames：1.18.42.12、1.18.42.14。
+完整说明请看 README.md。
