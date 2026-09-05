@@ -1,40 +1,38 @@
 # 更新日志
 
+## v1.3.0
+
+正式稳定版。
+
+相对 v1.2：
+
+- 新增 FeverGames `1.18.42.14` 前端精确补丁配置；
+- 保留 `1.18.42.12` 支持；
+- `1.18.42.14` 已在 Windows 7 SP1 x64 完成实机完整下载验证；
+- 自动扫描数字版本目录，并选择最新完整 FeverGames 版本；
+- 使用多 build 补丁表；
+- 所有前端补丁继续使用精确字节校验；
+- 未知版本只有完整匹配某个已知布局时才允许复用，否则安全停止；
+- 修复 PowerShell 2.0 / .NET 3.5 下 SHA256 `Dispose()` 兼容问题；
+- 状态输出统一为 `READY_FOR_WIN7_FEVERGAMES_DOWNLOAD`；
+- 新备份目录使用 `Win7_Downloader_Fix_Backup_v1.3`；
+- 恢复流程兼容旧 `Win7_Bedrock_Fix_Backup_v1.2`；
+- 状态检查、恢复与诊断流程适配滚动版本目录；
+- 整理 Release 包文档、兼容性说明、技术说明与英文快速说明；
+- 保留已经完整验证的 v1.2 .NET 下载核心，正式版不合入实验性并发重构。
+
+### 已知性能特征
+
+当前稳定下载核心优先保证正确性与兼容性。相比 Windows 8.1 上的官方下载器，大文件本地重组 / MD5 阶段可能短暂显示 0 B/s；尾部大量极小 chunk / 小文件阶段可能较慢。后续版本将基于 Win8.1 官方下载过程抓取结果继续优化。
+
 ## v1.2 - Zero-Start
 
-首个从“官方 / 重装后的干净 FeverGames”直接安装的整合版本，也是首个公开 Release。
+首个可以从官方/重装后的干净 FeverGames 直接安装的整合版本：
 
-### 已验证
-
-- Windows 7 SP1 x64 下 FeverGames 新版下载链端到端成功；
-- 《我的世界》基岩互通版完成 3130 / 3130 文件，下载进度达到 100%；
-- 《第五人格》已确认可以正常进入下载流程并下载游戏内容；
-- 其他 FeverGames 游戏也出现成功下载案例，说明替代下载器并非 Minecraft 专用实现；
-- ZMTP / ZMQ 握手、heartbeat、暂停、恢复、取消均已验证；
-- Manifest / Index / AES-CTR / Zstd / Chunk / SumBuf / MD5 全流程已验证。
-
-### 相对早期测试包
-
-- 合并前端 v2.0 的 5 处补丁；
+- 合并前端 5 处补丁；
 - 合并已端到端验证成功的 integrated downloadIPC；
-- 不需要 v1.0 ZMQ Emulator 作为前置步骤；
-- 不需要手动 Manifest Probe；
-- 不需要 `PRIVATE_manifest_response.json`；
-- 自动寻找 FeverGames 安装目录；
-- 自动申请管理员权限；
-- 自动检查 FeverGames 进程是否已退出；
-- 自动检查 .NET C# 编译器；
-- 自动检查 7-Zip / zstd；
-- 所有前端目标字节先在临时副本验证；
-- 正式文件修改前创建 clean rollback backup；
-- 安装出错时尝试事务式自动回滚；
-- 支持从旧测试环境寻找原版 Native downloadIPC 作为备份；
-- 新增完整状态检查；
-- 新增一键恢复官方文件；
-- 新增隐私安全的诊断收集；
-- 新增可选缓存清理。
-
-### 当前限制
-
-- FeverGames 前端二进制补丁目前只实机验证于 `1.18.42.12`；
-- 其他使用相同下载后端的游戏可能兼容，但只有实际测试过的游戏才列为“已验证”。
+- 不需要 ZMQ Emulator / Manifest Probe 等研究阶段前置步骤；
+- 自动申请管理员权限、检查编译器和解压器；
+- 正式修改前创建 clean rollback backup；
+- 安装失败时尝试自动回滚；
+- 提供状态检查、恢复、诊断和可选缓存清理。
