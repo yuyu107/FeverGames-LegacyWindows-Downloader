@@ -6,7 +6,8 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 try {
     Write-Host "============================================================"
-    Write-Host " FeverGames Win7 compatibility - rolling version selector"
+    Write-Host " FeverGames Legacy Windows Downloader v1.3.0"
+    Write-Host " Rolling version-folder selector"
     Write-Host "============================================================"
     Write-Host ""
 
@@ -21,19 +22,12 @@ try {
     Write-Host ""
     Write-Host ("[OK] Targeting newest complete version: " + $target.Name)
     Write-Host ("[OK] Path: " + $target.Path)
-    Write-Host "[INFO] The binary patch still uses exact byte validation."
-    Write-Host "[INFO] If a future build changes those bytes/offsets, installation will stop safely instead of patching blindly."
+    Write-Host "[INFO] Known frontend profiles: 1.18.42.12, 1.18.42.14."
+    Write-Host "[INFO] Unknown future folder versions may reuse a known layout only when all exact target bytes match."
     Write-Host ""
 
-    $legacyInstaller = Join-Path $scriptDir "Install_From_Zero_v1.2.ps1"
-    if (-not (Test-Path $legacyInstaller)) {
-        throw "Install_From_Zero_v1.2.ps1 is missing."
-    }
-
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $legacyInstaller -InstallDir $target.Path
-    $code = $LASTEXITCODE
-    if ($code -ne 0) { exit $code }
-    exit 0
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptDir "Install_From_Zero_v1.3.ps1") -InstallDir $target.Path
+    exit $LASTEXITCODE
 }
 catch {
     Write-Host ("[ERR] " + $_.Exception.Message)
