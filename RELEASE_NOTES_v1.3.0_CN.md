@@ -67,4 +67,4 @@ RESULT=SUCCESS_FULL_DOWNLOAD_VIA_FEVERGAMES
 
 ### 说明
 
-本项目是社区兼容项目，与网易及相关游戏开发商无官方关联。项目不分发游戏内容，不要求账号密码，也不要在 Issue / 日日志中公开 PRIVATE Manifest response、AES key、Token、Cookie、deviceId、uid、sig 或 secKey。
+本项目是社区兼容项目，与网易及相关游戏开发商无官方关联。项目不分发游戏内容，不要求账号密码，也不要在 Issue / 日志中公开 PRIVATE Manifest response、AES key、Token、Cookie、deviceId、uid、sig 或 secKey。
