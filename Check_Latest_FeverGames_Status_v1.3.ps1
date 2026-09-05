@@ -9,13 +9,12 @@ try {
     Show-FeverGamesVersionFolders $items 5
 
     $target = Get-NewestCompleteFeverGamesFolder $InstallDir
-    if ($target -eq $null) {
-        throw "No complete FeverGames version folder was found."
-    }
+    if ($target -eq $null) { throw "No complete FeverGames version folder found." }
 
     Write-Host ""
     Write-Host ("[INFO] Checking newest complete version: " + $target.Name)
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptDir "Check_Status_v1.2.ps1") -InstallDir $target.Path
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptDir "Check_Status_v1.3.ps1") -InstallDir $target.Path
     exit $LASTEXITCODE
 }
 catch {
