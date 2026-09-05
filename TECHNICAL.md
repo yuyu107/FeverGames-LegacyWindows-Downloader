@@ -1,17 +1,47 @@
 # 技术说明
 
-## 问题来源
+## 1. Windows 7 上的原版 downloadIPC 问题
 
-当前 FeverGames 的新下载后端会启动 `downloadIPC.exe`。实机排查确认，当前原版 downloader 使用 Go 1.23.x，并在 Windows 7 上很早期进入 Go runtime 时崩溃。其随机数初始化路径动态解析 `bcryptprimitives.dll!ProcessPrng`，该 API 的最低客户端版本为 Windows 8，因此 Windows 7 会在建立有效下载任务之前失败。
+实机与静态分析确认，FeverGames 新下载后端使用 Go 1.23.x `downloadIPC.exe`。在 Windows 7 上，程序很早进入 Go runtime 的随机数初始化路径，并动态解析：
 
-前端还存在独立的系统版本限制，因此完整方案分成两层：
+```text
+bcryptprimitives.dll!ProcessPrng
+```
 
-1. 对已验证的 `FeverGamesInstaller.exe 1.18.42.12` 做严格字节校验后修补，使 Win7 能进入下载流程，并把下载检查/下载参数伪装为 Win8.1；
-2. 用 Win7 可运行的 .NET downloader 替代原版 Go downloader。
+该路径在 Windows 7 上不可用，原版 downloader 会在有效下载任务建立前失败。
 
-## 替代 downloader 实现
+FeverGames 1.18.42.14 的原版 `downloadIPC.exe` 仍能确认包含同一 Go 1.23.8 / `ProcessPrng` 兼容问题，因此 v1.3 继续采用替代 downloader。
 
-已实机验证的流程为：
+## 2. 两层兼容方案
+
+v1.3 分为两层：
+
+1. 对 `FeverGamesInstaller.exe` 做严格、精确字节校验后的前端兼容修补；
+2. 用 Windows 7 可运行的 .NET downloader 替换原版 Go downloader。
+
+游戏内容版本不写死，仍从 FeverGames 启动参数读取动态 `targetVersion`。
+
+## 3. 已知前端补丁布局
+
+| 项目 | 1.18.42.12 | 1.18.42.14 |
+|---|---:|---:|
+| Gate A | `0xA64460` | `0xA64C70` |
+| Gate B | `0x6EE624` | `0x6EE624` |
+| `download_check` OS label | `0xA07B5C` | `0xA0836C` |
+| `download_check` minor | `0xA07BD2` | `0xA083E2` |
+| `sysVer` getter | `0xA09220` | `0xA09A30` |
+
+每处都在写入前验证原始字节。版本号未知时，只有一个已知配置的所有目标位置都匹配已知原始 / 已补丁状态，才允许复用；否则停止。
+
+具体字节定义见：
+
+```text
+FeverGames_PatchProfiles_v1.3.ps1
+```
+
+## 4. 替代 downloader 数据链
+
+已验证流程：
 
 ```text
 FeverGames
@@ -29,34 +59,45 @@ FeverGames
   -> FeverGames progress / completion state
 ```
 
-下载器从 FeverGames 原始参数中读取 `contentid`、`targetVersion`、`deviceId`、`appVer`、`isSSD`、`env`、`oversea`、`path` 等值，请求官方 Manifest。PRIVATE API response 只在内存中处理，不作为仓库内容或诊断结果保存。
+下载器读取 FeverGames 已经提供给官方下载任务的参数，并使用官方 Manifest / CDN 流程。PRIVATE API response 只在运行时内存中处理，不应写入公开诊断或仓库。
 
-## ZMQ / ZMTP 会话
+## 5. ZMQ / ZMTP
 
-通过 Windows 8.1 工作环境透明抓取后确认：
+已确认：
 
-- `--pubport`：downloadIPC 为 PUB，FeverGames 为 SUB；
-- `--subport`：downloadIPC 为 SUB，FeverGames 为 PUB；
-- downloader -> FeverGames 使用三帧 multipart：`contentId` / `message type` / `payload`；
-- FeverGames -> downloader 同样使用 `contentId` / `command type` / `payload`。
+- `--pubport`：downloadIPC PUB -> FeverGames SUB；
+- `--subport`：downloadIPC SUB <- FeverGames PUB；
+- 业务消息为三帧 multipart：`contentId` / `type` / `payload`。
 
-已实机确认的命令：
+已验证命令：
 
-- `1` = 暂停
-- `2` = 恢复
-- `3` = 取消/停止
-- `4` = heartbeat acknowledgement
-- `5` = 限速/参数更新相关
+```text
+1 = pause
+2 = resume
+3 = cancel/stop
+4 = heartbeat acknowledgement
+5 = rate-limit/update related
+```
 
-已确认的状态/事件包括：`2`、`3`、`4`、`6`、`8`、`10 heartbeat`、`2001`、`2002`、`2005`。
+完成状态使用 `StateFlags=8`。
 
-## 安全边界
+## 6. v1.3.0 的性能边界
 
-本项目不实现账号登录，不要求账号密码，不绕过游戏内容授权，也不把游戏文件、PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感数据提交到仓库。
+当前稳定 downloader 采用已完整验证的串行实现。日志分析确认两类主要性能开销：
 
-## 版本边界
+- 一个大文件的网络 chunk 下载完成后，会进行本地 SumBuf 重组与整文件 MD5；这个阶段可能没有网络流量，因此界面会短暂显示 0 B/s；
+- 尾部存在大量极小 chunk / 小文件，使用外部 `7z.exe` 解压时，进程启动固定开销会占据较大比例，因此最后几个百分点可能较慢。
 
-- Minecraft/游戏内容 `targetVersion`：动态适配；
-- FeverGamesInstaller.exe：当前前端补丁只验证于 `1.18.42.12`。
+Windows 8.1 官方 downloader 的完整过程抓取表明其文件创建 / I/O 调度方式与当前串行替代实现明显不同，后续版本可以研究并发下载和构建流水线。
 
-脚本对目标字节做精确检查，未知 build 会停止，而不是盲目写入。
+为了避免在正式发布前引入新的数据一致性风险，v1.3.0 不包含未经完整回归验证的并发 / 流水线重写。
+
+## 7. 安全边界
+
+本项目：
+
+- 不实现账号登录绕过；
+- 不绕过内容授权；
+- 不要求账号密码；
+- 不分发游戏文件；
+- 不在公开诊断中保存 PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感数据。
