@@ -2,7 +2,7 @@
 
 ## 1. Windows 7 上的原版 downloadIPC 问题
 
-实机与静态分析确认，FeverGames 新下载后端使用 Go 1.23.x `downloadIPC.exe`。在 Windows 7 上，程序很早进入 Go runtime 的随机数初始化路径，并动态解析：
+实机与静态分析确认，发烧游戏（FeverGames）新下载后端使用 Go 1.23.x `downloadIPC.exe`。在 Windows 7 上，程序很早进入 Go runtime 的随机数初始化路径，并动态解析：
 
 ```text
 bcryptprimitives.dll!ProcessPrng
@@ -10,7 +10,7 @@ bcryptprimitives.dll!ProcessPrng
 
 该路径在 Windows 7 上不可用，原版 downloader 会在有效下载任务建立前失败。
 
-FeverGames 1.18.42.14 的原版 `downloadIPC.exe` 仍能确认包含同一 Go 1.23.8 / `ProcessPrng` 兼容问题，因此 v1.3 继续采用替代 downloader。
+发烧游戏 1.18.42.14 的原版 `downloadIPC.exe` 仍能确认包含同一 Go 1.23.8 / `ProcessPrng` 兼容问题，因此 v1.3 继续采用替代 downloader。
 
 ## 2. 两层兼容方案
 
@@ -19,7 +19,7 @@ v1.3 分为两层：
 1. 对 `FeverGamesInstaller.exe` 做严格、精确字节校验后的前端兼容修补；
 2. 用 Windows 7 可运行的 .NET downloader 替换原版 Go downloader。
 
-游戏内容版本不写死，仍从 FeverGames 启动参数读取动态 `targetVersion`。
+游戏内容版本不写死，仍从发烧游戏启动参数读取动态 `targetVersion`。
 
 ## 3. 已知前端补丁布局
 
@@ -44,7 +44,7 @@ FeverGames_PatchProfiles_v1.3.ps1
 已验证流程：
 
 ```text
-FeverGames
+发烧游戏（FeverGames）
   -> ZMTP 3.x PUB/SUB
   -> Manifest API
   -> target_manifest.bin
@@ -56,17 +56,17 @@ FeverGames
   -> CDN chunks
   -> file reconstruction
   -> MD5 verification
-  -> FeverGames progress / completion state
+  -> 发烧游戏 progress / completion state
 ```
 
-下载器读取 FeverGames 已经提供给官方下载任务的参数，并使用官方 Manifest / CDN 流程。PRIVATE API response 只在运行时内存中处理，不应写入公开诊断或仓库。
+下载器读取发烧游戏已经提供给官方下载任务的参数，并使用官方 Manifest / CDN 流程。PRIVATE API response 只在运行时内存中处理，不应写入公开诊断或仓库。
 
 ## 5. ZMQ / ZMTP
 
 已确认：
 
-- `--pubport`：downloadIPC PUB -> FeverGames SUB；
-- `--subport`：downloadIPC SUB <- FeverGames PUB；
+- `--pubport`：downloadIPC PUB -> 发烧游戏 SUB；
+- `--subport`：downloadIPC SUB <- 发烧游戏 PUB；
 - 业务消息为三帧 multipart：`contentId` / `type` / `payload`。
 
 已验证命令：
