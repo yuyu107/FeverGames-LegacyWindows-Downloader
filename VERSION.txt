@@ -1,0 +1,4 @@
+FeverGames Legacy Windows Downloader
+Version: 1.3.0
+Release status: Stable
+Verified FeverGames frontend builds: 1.18.42.12, 1.18.42.14
