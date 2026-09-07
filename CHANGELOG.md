@@ -1,5 +1,39 @@
 # 更新日志
 
+## v1.3.1
+
+v1.3.0 的稳定性 / 兼容性更新。
+
+- 新增 FeverGames `1.18.42.14 / layout B` 前端精确补丁配置；
+- 确认同一个 `1.18.42.14` 文件夹版本号可能对应不同 `FeverGamesInstaller.exe` 二进制布局；
+- 同版本多布局时不再只根据版本号选择 profile，而是要求 5 个目标位置全部精确匹配；
+- 支持 FeverGames 安装在自定义目录：记住上次成功路径、检查卸载信息、快捷方式、各磁盘常见目录，并提供拖入根目录 / 数字版本目录 / `FeverGamesInstaller.exe` 的手动兜底；
+- 支持 7-Zip 安装在自定义目录：检查 Program Files、官方注册表路径、PATH 和已保存 decoder 路径；
+- 修复一键安装 UAC 流程，外层脚本会等待管理员安装过程完成后再运行状态检查；
+- 修复 Windows 7 / PowerShell 2.0 下保存 FeverGames 自定义安装根目录失败的问题；
+- 修复旧包中残留的 `v1.3.0-rc2` 显示；
+- Release ZIP 重新整理，根目录仅保留常用入口、`使用说明.txt` 与 `core\`；
+- 继续沿用已完成端到端验证的 v1.2 .NET 下载核心，不合入实验性 DLL 直解 Zstd、并发或流水线重构。
+
+### v1.3.1 实机验证
+
+Windows 7 SP1 x64：
+
+- FeverGames `1.18.42.14 / layout B`；
+- FeverGames 自定义目录 `D:\FeverGames`；
+- 7-Zip 自定义目录 `D:\7-Zip`；
+- 前端补丁 `5/5`；
+- `downloadIPC.exe` 替换成功；
+- rollback backup 完整；
+- 《我的世界》基岩互通版完整下载成功；
+- 游戏启动成功并进入世界。
+
+`1.18.42.14 / layout B` 原版 `FeverGamesInstaller.exe` SHA256：
+
+```text
+0a2a9568ac788227f0815e3c23761cadc11b51ee4ba9b86336cb2abf61e178e9
+```
+
 ## v1.3.0
 
 正式稳定版。
