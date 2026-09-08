@@ -120,13 +120,23 @@ jobs:
               p.write_text(new_text, encoding='utf-8-sig')
               print('Patched:', p)
 
-          # Rename the extracted v1.3.1 top-level folder so testers can distinguish it.
           top_dirs = [p for p in root.iterdir() if p.is_dir()]
           if len(top_dirs) != 1:
               raise SystemExit(f'Expected one top-level package directory, found: {top_dirs}')
           package_dir = top_dirs[0]
           renamed = root / 'FeverGames_LegacyWindows_Downloader_v1.3.2-test1'
           package_dir.rename(renamed)
+
+          # Ubuntu Info-ZIP renders some original Chinese names as #Uxxxx.
+          # Convert those escapes back before creating the UTF-8 ZIP.
+          esc = re.compile(r'#U([0-9A-Fa-f]{4})')
+          def decode_name(name):
+              return esc.sub(lambda m: chr(int(m.group(1), 16)), name)
+
+          for p in sorted(renamed.rglob('*'), key=lambda x: len(x.parts), reverse=True):
+              new_name = decode_name(p.name)
+              if new_name != p.name:
+                  p.rename(p.with_name(new_name))
 
           note = renamed / 'v1.3.2-test1_测试说明.txt'
           note.write_text(
@@ -143,11 +153,22 @@ jobs:
               encoding='utf-8-sig'
           )
 
-      - name: Repack test build
+      - name: Repack test build with UTF-8 filenames
+        shell: python
         run: |
-          cd package
-          zip -qr ../FeverGames_LegacyWindows_Downloader_v1.3.2-test1.zip .
-          cd ..
+          from pathlib import Path
+          import zipfile
+
+          source = Path('package')
+          output = Path('FeverGames_LegacyWindows_Downloader_v1.3.2-test1.zip')
+          with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for p in sorted(source.rglob('*')):
+                  if p.is_file():
+                      z.write(p, p.relative_to(source).as_posix())
+          print(output, output.stat().st_size)
+
+      - name: Create SHA-256
+        run: |
           sha256sum FeverGames_LegacyWindows_Downloader_v1.3.2-test1.zip | tee SHA256_v1.3.2-test1.txt
 
       - name: Upload test package
