@@ -2,22 +2,34 @@
 
 本页只记录在 Windows 7 SP1 x64 上实际测试过的结果。
 
+当前建议使用正式版：**v1.3.3**。
+
+由于 v1.3.2 Release 已删除，v1.3.3 同时包含 v1.3.2 的 PowerShell 2.0 / 旧 CLR 验证修复，以及 v1.3.3 的 Release CMD 编码 / 换行修复。
+
 ## 发烧游戏平台版本
 
 | 发烧游戏版本 | 状态 | 说明 |
 |---|---|---|
 | 1.18.42.12 | ✅ 已验证 | 早期完整端到端验证基准 |
-| 1.18.42.14 / layout A | ✅ 已验证 | v1.3.0 已验证布局；v1.3.2 的 PowerShell 2.0 修复也在此类环境中获得反馈 |
+| 1.18.42.14 / layout A | ✅ 已验证 | v1.3.0 已验证布局；旧 CLR 验证修复也在此类环境中获得反馈 |
 | 1.18.42.14 / layout B | ✅ 已验证 | v1.3.1 新增精确补丁配置；Win7 实机完成完整下载、启动并进入世界 |
 | 未知未来版本 / 未知布局 | ⚠️ 条件兼容 | 只有 5 个目标位置完整匹配某个已知布局时才复用，否则安全停止 |
 
 同一个 `1.18.42.14` 文件夹版本号可能对应不同的 `FeverGamesInstaller.exe` 二进制布局，因此安装器不会只根据版本号决定补丁，而是对 5 个目标位置进行精确字节匹配。
 
-## v1.3.2 PowerShell 2.0 / CLR 验证修复
+## v1.3.3 安装兼容修复
+
+### PowerShell 2.0 / 旧 CLR 托管 EXE 验证
 
 已确认一台 Windows 7 环境中，v1.3.1 可以完成前端 5 点临时修补并调用 .NET 4 `csc.exe` 生成 downloader，但随后在 `AssemblyName.GetAssemblyName()` 验证阶段误报并主动中止。
 
-v1.3.2 改为直接读取 PE Optional Header 的 CLR / COM Descriptor；同一台机器复测后可以正常完成安装。该失败发生在正式覆盖前，因此 v1.3.1 的 fail-safe 没有破坏原 FeverGames 文件。
+当前版本改为直接读取 PE Optional Header 的 CLR / COM Descriptor；同一台机器复测后可以正常完成安装。该失败发生在正式覆盖前，因此旧版本 fail-safe 没有破坏原 FeverGames 文件。
+
+### Release CMD 编码 / 换行
+
+v1.3.2 Release ZIP 的 `.cmd` 入口在部分 Windows 7 上会被错误解析，表现为 `锘緻echo`、`powershell.exe -> hell.exe`、`echo -> ho` 等。
+
+v1.3.3 Release ZIP 已将所有入口 `.cmd` 统一为无 BOM + CRLF，并保持纯 ASCII 命令内容；该问题已通过反馈环境复测。
 
 ## 安装路径
 
