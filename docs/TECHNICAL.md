@@ -11,7 +11,14 @@
 
 游戏内容版本不写死，仍从发烧游戏启动参数读取动态 `targetVersion`。
 
-## 3. v1.3.2 的 managed EXE 验证修复
+## 3. 当前 v1.3.3 安装兼容修复
+
+v1.3.3 是当前建议使用的正式版本。它包含两类安装兼容修复：
+
+1. v1.3.2 的 managed EXE 验证修复；
+2. v1.3.3 的 Release CMD 编码 / 换行修复。
+
+### 3.1 managed EXE 验证修复
 
 v1.3.1 原先使用：
 
@@ -21,7 +28,7 @@ v1.3.1 原先使用：
 
 判断编译出的 `downloadIPC.exe` 是否为托管程序。部分 Windows 7 / PowerShell 2.0 环境中的当前 PowerShell CLR 较旧，而脚本可能选择 .NET Framework 4.0 的 `csc.exe`。此时编译器已经成功生成文件，但旧 CLR 不一定能通过上述方式加载或识别目标程序集，于是会产生验证误判。
 
-v1.3.2 的 `Is-ManagedExe` 不再加载程序集，而是直接读取 PE：
+当前 `Is-ManagedExe` 不再加载程序集，而是直接读取 PE：
 
 ```text
 MZ header
@@ -32,6 +39,20 @@ MZ header
 ```
 
 只有 CLR / COM Descriptor 同时存在有效 RVA 与 Size 才判定为托管 EXE。安装脚本和状态检查脚本共享这一判断思路，因此不依赖当前 PowerShell CLR 能否加载目标程序集，同时仍能在正式覆盖前拒绝明显无效的编译输出。
+
+### 3.2 Release CMD 编码 / 换行修复
+
+v1.3.2 Release ZIP 曾出现 `.cmd` 入口在 Windows 7 `cmd.exe` 下被错误解析的问题，典型表现包括：
+
+```text
+锘緻echo off
+powershell.exe -> hell.exe
+echo -> ho
+goto -> to
+setlocal -> al
+```
+
+v1.3.3 Release ZIP 中所有入口 `.cmd` 均改为无 BOM + CRLF，并保持纯 ASCII 命令内容。中文文件名继续保留，例如 `01_一键安装.cmd`。
 
 ## 4. 已知前端补丁布局
 
@@ -59,7 +80,7 @@ FeverGames
 
 ## 6. 性能边界
 
-当前稳定 downloader 采用已完整验证的串行实现。大文件网络 chunk 下载完成后会进行本地 SumBuf 重组与整文件 MD5；尾部大量极小 chunk / 小文件使用外部 `7z.exe` 时也可能较慢。v1.3.2 不包含未经完整回归验证的 DLL 直解 Zstd、并发或流水线重写。
+当前稳定 downloader 采用已完整验证的串行实现。大文件网络 chunk 下载完成后会进行本地 SumBuf 重组与整文件 MD5；尾部大量极小 chunk / 小文件使用外部 `7z.exe` 时也可能较慢。v1.3.3 不包含未经完整回归验证的 DLL 直解 Zstd、并发或流水线重写。
 
 ## 7. 安全边界
 
