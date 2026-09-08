@@ -1,4 +1,4 @@
-﻿FeverGames Legacy Windows Downloader v1.3.2
+FeverGames Legacy Windows Downloader v1.3.3
 ============================================================
 
 用途
@@ -6,18 +6,18 @@
 用于恢复发烧游戏（FeverGames）新版下载后端在 Windows 7 SP1 x64 上的运行能力。
 本工具解决的是发烧游戏“下载流程兼容”，不是保证所有下载下来的游戏本体都能在 Windows 7 上运行。
 
-v1.3.2 主要修复
+v1.3.3 主要修复
 ----------------
-1. 修复部分较原生 Windows 7 / PowerShell 2.0 环境中，对刚编译出的 .NET downloadIPC.exe 发生误判并中止安装的问题。
-2. v1.3.1 使用当前 PowerShell / CLR 去识别刚由 .NET 4 csc.exe 生成的程序集；旧 CLR 可能把“当前 CLR 无法加载”误判成“不是有效的托管 EXE”。
-3. v1.3.2 改为直接读取 EXE 的 PE Optional Header，并检查 CLR / COM Descriptor。
-4. 状态检查同步使用同一套 CLR-independent 判断。
-5. 如果编译后验证仍失败，会额外输出生成文件大小与 SHA-256。
-6. 该修复已由一台此前 v1.3.1 会稳定报 managed EXE 验证错误的 Windows 7 实机复测，修正后的验证逻辑可以正常完成安装。
+1. 合入 v1.3.2 的 Windows 7 / PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复。
+2. 安装脚本不再让当前 PowerShell / CLR 去识别刚由 .NET 4 csc.exe 生成的程序集，而是直接读取 EXE 的 PE Optional Header，并检查 CLR / COM Descriptor。
+3. 修复 v1.3.2 Release ZIP 中 .cmd 入口文件 UTF-8 BOM / LF 换行导致 Windows 7 cmd.exe 解析错乱的问题。
+4. Release 入口 .cmd 已统一为无 BOM + CRLF，并保持纯 ASCII 命令内容。
+5. 状态检查同步使用同一套 CLR-independent 判断。
+6. 如果编译后验证仍失败，会额外输出生成文件大小与 SHA-256。
 
-除上述验证逻辑外，layout A/B、5 点精确字节补丁、已验证的 v1.2 .NET 下载核心、自定义 FeverGames 路径、7-Zip 检测、UAC 等待与回滚流程均保持 v1.3.1 行为。
+除上述验证逻辑和入口打包格式外，layout A/B、5 点精确字节补丁、已验证的 v1.2 .NET 下载核心、自定义 FeverGames 路径、7-Zip 检测、UAC 等待与回滚流程均保持已验证行为。
 
 Release 包运行 01_一键安装.cmd；源码仓库运行 01_Zero_Start_One_Click_Install.cmd。
 正常状态应包含 Frontend patch count: 5/5、downloadIPC.exe = managed Win7 replacement、rollback backup = COMPLETE、RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD。
 
-版本：v1.3.2
+版本：v1.3.3
