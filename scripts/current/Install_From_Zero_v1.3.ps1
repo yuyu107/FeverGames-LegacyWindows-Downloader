@@ -2,7 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 $ThisScript = $MyInvocation.MyCommand.Definition
-$PackageVersion = "1.3.2"
+$PackageVersion = "1.3.3"
 
 function Info($s){ Write-Host "[INFO] $s" }
 function Ok($s){ Write-Host "[OK]   $s" }
