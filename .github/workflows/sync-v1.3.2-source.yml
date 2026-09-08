@@ -1,0 +1,200 @@
+name: Sync v1.3.2 Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-v1.3.2-source.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download v1.3.1 verified Release base
+        run: |
+          mkdir -p /tmp/fg132
+          curl -fL --retry 3 -o /tmp/fg132/base.zip \
+            'https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.3.1/FeverGames_LegacyWindows_Downloader_v1.3.1.zip'
+
+      - name: Sync formal v1.3.2 source
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, shutil, zipfile
+
+          repo = Path.cwd()
+          work = Path('/tmp/fg132/extracted')
+          if work.exists(): shutil.rmtree(work)
+          work.mkdir(parents=True)
+          with zipfile.ZipFile('/tmp/fg132/base.zip') as z:
+              z.extractall(work)
+          roots = [p for p in work.iterdir() if p.is_dir()]
+          if len(roots) != 1:
+              raise SystemExit(f'Unexpected Release layout: {roots}')
+          pkg = roots[0]
+
+          managed = r'''function Is-ManagedExe([string]$Path) {
+              if (-not (Test-Path $Path -PathType Leaf)) { return $false }
+              $fs = $null
+              $br = $null
+              try {
+                  $fs = New-Object System.IO.FileStream(
+                      $Path,
+                      [System.IO.FileMode]::Open,
+                      [System.IO.FileAccess]::Read,
+                      [System.IO.FileShare]::ReadWrite
+                  )
+                  $br = New-Object System.IO.BinaryReader -ArgumentList $fs
+                  if ($fs.Length -lt 256) { return $false }
+                  if ($br.ReadUInt16() -ne 0x5A4D) { return $false }
+                  [void]$fs.Seek(0x3C,[System.IO.SeekOrigin]::Begin)
+                  $peOffset = $br.ReadInt32()
+                  if ($peOffset -lt 0 -or ([Int64]$peOffset + 24) -gt $fs.Length) { return $false }
+                  [void]$fs.Seek($peOffset,[System.IO.SeekOrigin]::Begin)
+                  if ($br.ReadUInt32() -ne 0x00004550) { return $false }
+                  [void]$fs.Seek(([Int64]$peOffset + 20),[System.IO.SeekOrigin]::Begin)
+                  $optionalSize = $br.ReadUInt16()
+                  $optionalStart = [Int64]$peOffset + 24
+                  if ($optionalSize -lt 2 -or ($optionalStart + $optionalSize) -gt $fs.Length) { return $false }
+                  [void]$fs.Seek($optionalStart,[System.IO.SeekOrigin]::Begin)
+                  $magic = $br.ReadUInt16()
+                  if ($magic -eq 0x10B) { $dataDirectoryStart = $optionalStart + 96 }
+                  elseif ($magic -eq 0x20B) { $dataDirectoryStart = $optionalStart + 112 }
+                  else { return $false }
+                  $clrEntry = $dataDirectoryStart + (14 * 8)
+                  if (($clrEntry + 8) -gt ($optionalStart + $optionalSize)) { return $false }
+                  [void]$fs.Seek($clrEntry,[System.IO.SeekOrigin]::Begin)
+                  $clrRva = $br.ReadUInt32()
+                  $clrSize = $br.ReadUInt32()
+                  return (($clrRva -ne 0) -and ($clrSize -ne 0))
+              }
+              catch { return $false }
+              finally {
+                  if ($br -ne $null) { $br.Close() }
+                  elseif ($fs -ne $null) { $fs.Close() }
+              }
+          }'''
+          func = re.compile(r'function Is-ManagedExe\(\[string\]\$Path\)\s*\{.*?\n\}', re.S)
+
+          for rel in ['core/Install_From_Zero_v1.3.ps1','core/Check_Status_v1.3.ps1']:
+              p = pkg / rel
+              s = p.read_text(encoding='utf-8-sig')
+              s, n = func.subn(managed, s, count=1)
+              if n != 1:
+                  raise SystemExit(f'Could not patch Is-ManagedExe in {rel}')
+              if rel.endswith('Install_From_Zero_v1.3.ps1'):
+                  s = s.replace('$PackageVersion = "1.3.1"', '$PackageVersion = "1.3.2"')
+                  s = s.replace('$PackageVersion = "1.3.0"', '$PackageVersion = "1.3.2"')
+                  old = '''    if (-not (Is-ManagedExe $compiledDownloader)) {\n        throw "Compiled downloader did not validate as a managed .NET executable."\n    }'''
+                  new = '''    if (-not (Is-ManagedExe $compiledDownloader)) {\n        if (Test-Path $compiledDownloader) {\n            try { Info ("Compiled downloader size: " + (Get-Item $compiledDownloader).Length + " bytes") } catch {}\n            try { Info ("Compiled downloader SHA256: " + (Get-Sha256 $compiledDownloader)) } catch {}\n        }\n        throw "Compiled downloader PE header does not contain a CLR/COM descriptor."\n    }'''
+                  if old in s:
+                      s = s.replace(old, new, 1)
+                  else:
+                      s = s.replace('throw "Compiled downloader did not validate as a managed .NET executable."', 'throw "Compiled downloader PE header does not contain a CLR/COM descriptor."', 1)
+              else:
+                  s = s.replace('v1.3.1 - Status', 'v1.3.2 - Status')
+              p.write_text(s, encoding='utf-8-sig')
+
+          p = pkg/'core/Install_Latest_FeverGames_v1.3.ps1'
+          p.write_text(p.read_text(encoding='utf-8-sig').replace('v1.3.1','v1.3.2'), encoding='utf-8-sig')
+          p = pkg/'core/Collect_Diagnostics_v1.3.ps1'
+          p.write_text(p.read_text(encoding='utf-8-sig').replace('FeverGames_v1.3.1_Diagnostic_Result','FeverGames_v1.3.2_Diagnostic_Result'), encoding='utf-8-sig')
+
+          version = '''FeverGames Legacy Windows Downloader
+          Version: 1.3.2
+          Release status: Stable
+          Verified FeverGames frontend builds/layouts: 1.18.42.12, 1.18.42.14 / layout A, 1.18.42.14 / layout B
+
+          v1.3.2 compatibility fix:
+          - Managed downloadIPC validation is CLR-independent and PowerShell 2.0 safe.
+          - Verified on a Windows 7 environment where v1.3.1 stopped at managed EXE validation and the corrected validation logic completed installation successfully.
+          '''
+          version = '\n'.join(x.strip() for x in version.splitlines()).strip()+'\n'
+          (pkg/'core/VERSION.txt').write_text(version, encoding='utf-8-sig')
+
+          core_files = [
+              'Check_Latest_FeverGames_Status_v1.3.ps1','Check_Status_v1.3.ps1',
+              'Collect_Diagnostics_v1.3.ps1','FeverGames_PatchProfiles_v1.3.ps1',
+              'FeverGames_VersionResolver_v1.3.ps1','Install_From_Zero_v1.3.ps1',
+              'Install_Latest_FeverGames_v1.3.ps1','Restore_Latest_FeverGames_v1.3.ps1',
+              'Restore_Official_Original_v1.3.ps1','Run_Install_Elevated_v1.3.ps1'
+          ]
+          for name in core_files:
+              shutil.copy2(pkg/'core'/name, repo/name)
+          shutil.copy2(pkg/'core/VERSION.txt', repo/'VERSION.txt')
+
+          guide = '''FeverGames Legacy Windows Downloader v1.3.2
+          ============================================================
+
+          用途
+          ----
+          用于恢复发烧游戏（FeverGames）新版下载后端在 Windows 7 SP1 x64 上的运行能力。
+          本工具解决的是发烧游戏“下载流程兼容”，不是保证所有下载下来的游戏本体都能在 Windows 7 上运行。
+
+          v1.3.2 主要修复
+          ----------------
+          1. 修复部分较原生 Windows 7 / PowerShell 2.0 环境中，对刚编译出的 .NET downloadIPC.exe 发生误判并中止安装的问题。
+          2. v1.3.1 使用当前 PowerShell / CLR 去识别刚由 .NET 4 csc.exe 生成的程序集；旧 CLR 可能把“当前 CLR 无法加载”误判成“不是有效的托管 EXE”。
+          3. v1.3.2 改为直接读取 EXE 的 PE Optional Header，并检查 CLR / COM Descriptor。
+          4. 状态检查同步使用同一套 CLR-independent 判断。
+          5. 如果编译后验证仍失败，会额外输出生成文件大小与 SHA-256。
+          6. 该修复已由一台此前 v1.3.1 会稳定报 managed EXE 验证错误的 Windows 7 实机复测，修正后的验证逻辑可以正常完成安装。
+
+          除上述验证逻辑外，layout A/B、5 点精确字节补丁、已验证的 v1.2 .NET 下载核心、自定义 FeverGames 路径、7-Zip 检测、UAC 等待与回滚流程均保持 v1.3.1 行为。
+
+          Release 包运行 01_一键安装.cmd；源码仓库运行 01_Zero_Start_One_Click_Install.cmd。
+          正常状态应包含 Frontend patch count: 5/5、downloadIPC.exe = managed Win7 replacement、rollback backup = COMPLETE、RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD。
+
+          版本：v1.3.2
+          '''
+          guide = '\n'.join(x.strip() for x in guide.splitlines()).strip()+'\n'
+          (repo/'00_使用说明.txt').write_text(guide, encoding='utf-8-sig')
+
+          (repo/'01_Zero_Start_One_Click_Install.cmd').write_text(r'''@echo off
+          setlocal
+          cd /d "%~dp0"
+
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Prepare_Source_v1.2.ps1"
+          if errorlevel 1 goto :end
+
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run_Install_Elevated_v1.3.ps1"
+          set "RC=%ERRORLEVEL%"
+
+          echo.
+          if not "%RC%"=="0" (
+              echo [ERR] Installation did not complete successfully. Exit code: %RC%
+              goto :end
+          )
+          echo [OK] Installer returned success.
+          echo [INFO] Running status verification...
+          echo.
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Check_Latest_FeverGames_Status_v1.3.ps1"
+          :end
+          echo.
+          pause
+          '''.replace('          ',''), encoding='utf-8')
+
+          (repo/'02_Check_Status.cmd').write_text('@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Check_Latest_FeverGames_Status_v1.3.ps1"\necho.\npause\n', encoding='utf-8')
+          (repo/'03_Restore_Official_Original.cmd').write_text('@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Restore_Latest_FeverGames_v1.3.ps1"\necho.\npause\n', encoding='utf-8')
+          (repo/'04_Collect_Diagnostics.cmd').write_text('@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Collect_Diagnostics_v1.3.ps1"\necho.\necho [INFO] Diagnostic result is created next to this CMD file.\necho.\npause\n', encoding='utf-8')
+
+          (repo/'RELEASE_SHA256_v1.3.2.txt').write_text('928574eb5066332f531706c7adfea606186b843200f4f4694bff62ef51bc9d98  FeverGames_LegacyWindows_Downloader_v1.3.2.zip\n', encoding='ascii')
+
+          wf = repo/'.github/workflows/sync-v1.3.2-source.yml'
+          if wf.exists(): wf.unlink()
+
+      - name: Commit source sync
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'release: sync v1.3.2 verified source' || exit 0
+          git push origin main
