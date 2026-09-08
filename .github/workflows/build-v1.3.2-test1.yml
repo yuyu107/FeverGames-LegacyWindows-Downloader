@@ -28,12 +28,6 @@ jobs:
           import re
 
           root = Path('package')
-          candidates = list(root.rglob('Install_From_Zero_v1.3.ps1'))
-          if len(candidates) != 1:
-              raise SystemExit(f'Expected exactly one Install_From_Zero_v1.3.ps1, found: {candidates}')
-
-          p = candidates[0]
-          text = p.read_text(encoding='utf-8-sig')
 
           old_pattern = re.compile(
               r'function Is-ManagedExe\(\[string\]\$Path\)\s*\{.*?\n\}',
@@ -55,7 +49,6 @@ jobs:
                   $br = New-Object System.IO.BinaryReader -ArgumentList $fs
 
                   if ($fs.Length -lt 256) { return $false }
-
                   if ($br.ReadUInt16() -ne 0x5A4D) { return $false }
 
                   [void]$fs.Seek(0x3C,[System.IO.SeekOrigin]::Begin)
@@ -88,7 +81,6 @@ jobs:
                   [void]$fs.Seek($clrEntry,[System.IO.SeekOrigin]::Begin)
                   $clrRva = $br.ReadUInt32()
                   $clrSize = $br.ReadUInt32()
-
                   return (($clrRva -ne 0) -and ($clrSize -ne 0))
               }
               catch {
@@ -100,40 +92,56 @@ jobs:
               }
           }'''
 
-          new_text, count = old_pattern.subn(replacement, text, count=1)
-          if count != 1:
-              raise SystemExit('Could not replace Is-ManagedExe function safely.')
+          targets = list(root.rglob('Install_From_Zero_v1.3.ps1')) + list(root.rglob('Check_Status_v1.3.ps1'))
+          if len(targets) != 2:
+              raise SystemExit(f'Expected install + status scripts, found: {targets}')
 
-          # Keep the release behavior intact, but make the test build visible in logs.
-          new_text = new_text.replace('$PackageVersion = "1.3.1"', '$PackageVersion = "1.3.2-test1"')
-          new_text = new_text.replace('$PackageVersion = "1.3.0"', '$PackageVersion = "1.3.2-test1"')
+          for p in targets:
+              text = p.read_text(encoding='utf-8-sig')
+              new_text, count = old_pattern.subn(replacement, text, count=1)
+              if count != 1:
+                  raise SystemExit(f'Could not replace Is-ManagedExe safely in {p}')
 
-          needle = 'if (-not (Is-ManagedExe $compiledDownloader)) { throw "Compiled downloader did not validate as a managed .NET executable." }'
-          diagnostic = '''if (-not (Is-ManagedExe $compiledDownloader)) {
+              if p.name == 'Install_From_Zero_v1.3.ps1':
+                  new_text = new_text.replace('$PackageVersion = "1.3.1"', '$PackageVersion = "1.3.2-test1"')
+                  new_text = new_text.replace('$PackageVersion = "1.3.0"', '$PackageVersion = "1.3.2-test1"')
+
+                  needle = 'if (-not (Is-ManagedExe $compiledDownloader)) { throw "Compiled downloader did not validate as a managed .NET executable." }'
+                  diagnostic = '''if (-not (Is-ManagedExe $compiledDownloader)) {
               if (Test-Path $compiledDownloader) {
                   try { Info ("Compiled downloader size: " + (Get-Item $compiledDownloader).Length + " bytes") } catch {}
                   try { Info ("Compiled downloader SHA256: " + (Get-Sha256 $compiledDownloader)) } catch {}
               }
               throw "Compiled downloader PE header does not contain a CLR/COM descriptor."
           }'''
-          if needle in new_text:
-              new_text = new_text.replace(needle, diagnostic, 1)
+                  if needle in new_text:
+                      new_text = new_text.replace(needle, diagnostic, 1)
 
-          p.write_text(new_text, encoding='utf-8-sig')
+              p.write_text(new_text, encoding='utf-8-sig')
+              print('Patched:', p)
 
-          note = root / 'v1.3.2-test1_测试说明.txt'
+          # Rename the extracted v1.3.1 top-level folder so testers can distinguish it.
+          top_dirs = [p for p in root.iterdir() if p.is_dir()]
+          if len(top_dirs) != 1:
+              raise SystemExit(f'Expected one top-level package directory, found: {top_dirs}')
+          package_dir = top_dirs[0]
+          renamed = root / 'FeverGames_LegacyWindows_Downloader_v1.3.2-test1'
+          package_dir.rename(renamed)
+
+          note = renamed / 'v1.3.2-test1_测试说明.txt'
           note.write_text(
               'FeverGames Legacy Windows Downloader v1.3.2-test1\n\n'
               '此测试包直接基于已发布的 v1.3.1 Release ZIP 制作。\n'
-              '唯一功能性改动：修复 Windows 7 / PowerShell 2.0 环境下，使用当前 CLR 加载 .NET 4 编译结果可能导致的 managed EXE 误判。\n'
-              '新的判断方式直接读取 PE Optional Header 的 CLR/COM Descriptor，不要求当前 PowerShell CLR 能加载目标程序集。\n\n'
+              '功能性改动仅针对本次 Windows 7 / PowerShell 2.0 环境的 .NET EXE 误判：\n'
+              '1. 安装脚本不再用当前 CLR 加载编译结果来判断是否为托管 EXE；\n'
+              '2. 状态检查脚本同步使用 PE CLR/COM Descriptor 判断，避免安装成功后再次误报；\n'
+              '3. 安装验证失败时会额外输出编译结果大小和 SHA-256。\n\n'
+              '其余前端补丁、layout A/B 识别、下载核心和路径检测均保持 v1.3.1 原样。\n\n'
               '请完全退出发烧游戏后运行 01_一键安装.cmd。\n'
               '如果仍失败，请截图完整窗口，或运行 04_收集诊断.cmd。\n'
               '此包仅用于验证问题，验证完成前不要替代 v1.3.1 正式版。\n',
               encoding='utf-8-sig'
           )
-
-          print('Patched:', p)
 
       - name: Repack test build
         run: |
