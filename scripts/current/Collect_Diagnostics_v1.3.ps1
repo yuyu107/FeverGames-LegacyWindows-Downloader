@@ -6,7 +6,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # scripts\current -> scripts -> repository root
 $packageRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
-$result = Join-Path $packageRoot "FeverGames_v1.3.2_Diagnostic_Result"
+$result = Join-Path $packageRoot "FeverGames_v1.3.3_Diagnostic_Result"
 
 if (Test-Path $result) {
     Remove-Item $result -Recurse -Force
