@@ -1,10 +1,11 @@
-param([string]$InstallDir = "")
+﻿param([string]$InstallDir = "")
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . (Join-Path $scriptDir "FeverGames_VersionResolver_v1.3.ps1")
 
-$result = Join-Path $scriptDir "FeverGames_v1.3_Diagnostic_Result"
+$packageRoot = Split-Path -Parent $scriptDir
+$result = Join-Path $packageRoot "FeverGames_v1.3.2_Diagnostic_Result"
 
 if (Test-Path $result) {
     Remove-Item $result -Recurse -Force

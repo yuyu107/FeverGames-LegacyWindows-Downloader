@@ -1,8 +1,8 @@
-param([string]$InstallDir = "")
+﻿param([string]$InstallDir = "")
 
 $ErrorActionPreference = "Stop"
 $ThisScript = $MyInvocation.MyCommand.Definition
-$PackageVersion = "1.3.0"
+$PackageVersion = "1.3.2"
 
 function Info($s){ Write-Host "[INFO] $s" }
 function Ok($s){ Write-Host "[OK]   $s" }
@@ -13,10 +13,15 @@ function Ensure-Admin {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($id)
     $admin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
     if (-not $admin) {
         Info "Requesting administrator privileges..."
         $arg = "-NoProfile -ExecutionPolicy Bypass -File `"$ThisScript`""
-        if (-not [String]::IsNullOrEmpty($InstallDir)) { $arg += " -InstallDir `"$InstallDir`"" }
+
+        if (-not [String]::IsNullOrEmpty($InstallDir)) {
+            $arg += " -InstallDir `"$InstallDir`""
+        }
+
         Start-Process powershell.exe -Verb RunAs -ArgumentList $arg
         exit 0
     }
@@ -24,55 +29,130 @@ function Ensure-Admin {
 
 function Assert-PlatformClosed {
     $busy = @()
+
     foreach ($n in @("FeverGamesInstaller","FeverGamesLauncher","downloadIPC","FeverGamesService")) {
-        if (Get-Process -Name $n -ErrorAction SilentlyContinue) { $busy += $n }
+        if (Get-Process -Name $n -ErrorAction SilentlyContinue) {
+            $busy += $n
+        }
     }
-    if ($busy.Count -gt 0) { throw ("Please fully exit FeverGames first. Running process(es): " + ($busy -join ", ")) }
+
+    if ($busy.Count -gt 0) {
+        throw ("Please fully exit FeverGames first. Running process(es): " + ($busy -join ", "))
+    }
 }
 
 function Read-Bytes([string]$Path,[Int64]$Offset,[int]$Count) {
-    $fs = New-Object System.IO.FileStream($Path,[System.IO.FileMode]::Open,[System.IO.FileAccess]::Read,[System.IO.FileShare]::ReadWrite)
+    $fs = New-Object System.IO.FileStream(
+        $Path,
+        [System.IO.FileMode]::Open,
+        [System.IO.FileAccess]::Read,
+        [System.IO.FileShare]::ReadWrite
+    )
+
     try {
         [void]$fs.Seek($Offset,[System.IO.SeekOrigin]::Begin)
         [byte[]]$buf = New-Object byte[] $Count
         $n = $fs.Read($buf,0,$Count)
-        if ($n -ne $Count) { throw ("Short read at 0x" + ("{0:X}" -f $Offset)) }
+
+        if ($n -ne $Count) {
+            throw ("Short read at 0x" + ("{0:X}" -f $Offset))
+        }
+
         return ,$buf
-    } finally { $fs.Dispose() }
+    }
+    finally {
+        $fs.Close()
+    }
 }
 
 function Write-Bytes([string]$Path,[Int64]$Offset,[byte[]]$Bytes) {
-    $fs = New-Object System.IO.FileStream($Path,[System.IO.FileMode]::Open,[System.IO.FileAccess]::ReadWrite,[System.IO.FileShare]::Read)
+    $fs = New-Object System.IO.FileStream(
+        $Path,
+        [System.IO.FileMode]::Open,
+        [System.IO.FileAccess]::ReadWrite,
+        [System.IO.FileShare]::Read
+    )
+
     try {
         [void]$fs.Seek($Offset,[System.IO.SeekOrigin]::Begin)
         $fs.Write($Bytes,0,$Bytes.Length)
         $fs.Flush()
-    } finally { $fs.Dispose() }
+    }
+    finally {
+        $fs.Close()
+    }
 }
 
 function Eq([byte[]]$A,[byte[]]$B) {
-    if ($A -eq $null -or $B -eq $null -or $A.Length -ne $B.Length) { return $false }
-    for ($i=0; $i -lt $A.Length; $i++) { if ($A[$i] -ne $B[$i]) { return $false } }
+    if ($A -eq $null -or $B -eq $null) { return $false }
+    if ($A.Length -ne $B.Length) { return $false }
+
+    for ($i=0; $i -lt $A.Length; $i++) {
+        if ($A[$i] -ne $B[$i]) { return $false }
+    }
+
     return $true
 }
 
-function Hex([byte[]]$B) { return (($B | ForEach-Object { $_.ToString("X2") }) -join " ") }
+function Hex([byte[]]$B) {
+    return (($B | ForEach-Object { $_.ToString("X2") }) -join " ")
+}
 
 function Get-Sha256([string]$Path) {
     $sha = [Security.Cryptography.SHA256]::Create()
     $fs = [IO.File]::OpenRead($Path)
+
     try {
         $hash = $sha.ComputeHash($fs)
         return (($hash | ForEach-Object { $_.ToString("x2") }) -join "")
-    } finally {
-        $fs.Dispose()
+    }
+    finally {
+        $fs.Close()
+        # SHA256Managed on older .NET/PowerShell may not expose Dispose() directly.
         $sha.Clear()
     }
 }
 
 function Is-ManagedExe([string]$Path) {
-    if (-not (Test-Path $Path)) { return $false }
-    try { [void][Reflection.AssemblyName]::GetAssemblyName($Path); return $true } catch { return $false }
+    if (-not (Test-Path $Path -PathType Leaf)) { return $false }
+    $fs = $null
+    $br = $null
+    try {
+        $fs = New-Object System.IO.FileStream(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::ReadWrite
+        )
+        $br = New-Object System.IO.BinaryReader -ArgumentList $fs
+        if ($fs.Length -lt 256) { return $false }
+        if ($br.ReadUInt16() -ne 0x5A4D) { return $false }
+        [void]$fs.Seek(0x3C,[System.IO.SeekOrigin]::Begin)
+        $peOffset = $br.ReadInt32()
+        if ($peOffset -lt 0 -or ([Int64]$peOffset + 24) -gt $fs.Length) { return $false }
+        [void]$fs.Seek($peOffset,[System.IO.SeekOrigin]::Begin)
+        if ($br.ReadUInt32() -ne 0x00004550) { return $false }
+        [void]$fs.Seek(([Int64]$peOffset + 20),[System.IO.SeekOrigin]::Begin)
+        $optionalSize = $br.ReadUInt16()
+        $optionalStart = [Int64]$peOffset + 24
+        if ($optionalSize -lt 2 -or ($optionalStart + $optionalSize) -gt $fs.Length) { return $false }
+        [void]$fs.Seek($optionalStart,[System.IO.SeekOrigin]::Begin)
+        $magic = $br.ReadUInt16()
+        if ($magic -eq 0x10B) { $dataDirectoryStart = $optionalStart + 96 }
+        elseif ($magic -eq 0x20B) { $dataDirectoryStart = $optionalStart + 112 }
+        else { return $false }
+        $clrEntry = $dataDirectoryStart + (14 * 8)
+        if (($clrEntry + 8) -gt ($optionalStart + $optionalSize)) { return $false }
+        [void]$fs.Seek($clrEntry,[System.IO.SeekOrigin]::Begin)
+        $clrRva = $br.ReadUInt32()
+        $clrSize = $br.ReadUInt32()
+        return (($clrRva -ne 0) -and ($clrSize -ne 0))
+    }
+    catch { return $false }
+    finally {
+        if ($br -ne $null) { $br.Close() }
+        elseif ($fs -ne $null) { $fs.Close() }
+    }
 }
 
 function Find-Compiler {
@@ -83,76 +163,274 @@ function Find-Compiler {
         "$env:WINDIR\Microsoft.NET\Framework\v3.5\csc.exe",
         "$env:WINDIR\Microsoft.NET\Framework64\v2.0.50727\csc.exe",
         "$env:WINDIR\Microsoft.NET\Framework\v2.0.50727\csc.exe"
-    )) { if (Test-Path $c) { return $c } }
+    )) {
+        if (Test-Path $c) { return $c }
+    }
+
     return $null
 }
 
+function Add-DecoderCandidate([System.Collections.ArrayList]$List,[string]$Path) {
+    if ([String]::IsNullOrEmpty($Path)) { return }
+    try {
+        $full = $Path
+        if (Test-Path $full) {
+            $full = (Resolve-Path $full).Path
+            if (-not $List.Contains($full)) { [void]$List.Add($full) }
+        }
+    } catch {}
+}
+
+function Get-SevenZipRegistryCandidates {
+    $result = New-Object System.Collections.ArrayList
+
+    foreach ($key in @(
+        "HKLM:\SOFTWARE\7-Zip",
+        "HKLM:\SOFTWARE\Wow6432Node\7-Zip",
+        "HKCU:\SOFTWARE\7-Zip",
+        "HKCU:\SOFTWARE\Wow6432Node\7-Zip"
+    )) {
+        try {
+            if (-not (Test-Path $key)) { continue }
+            $item = Get-ItemProperty $key
+
+            foreach ($valueName in @("Path","Path64","Path32")) {
+                $base = $item.$valueName
+                if (-not [String]::IsNullOrEmpty($base)) {
+                    Add-DecoderCandidate $result (Join-Path $base "7z.exe")
+                }
+            }
+        } catch {}
+    }
+
+    return ,$result
+}
+
+function Find-CommandPath([string]$Name) {
+    try {
+        $cmd = Get-Command $Name -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($cmd -ne $null) {
+            if (-not [String]::IsNullOrEmpty($cmd.Path)) { return $cmd.Path }
+            if (-not [String]::IsNullOrEmpty($cmd.Definition) -and (Test-Path $cmd.Definition)) {
+                return $cmd.Definition
+            }
+        }
+    } catch {}
+    return ""
+}
+
 function Find-Decoder([string]$Dir,[string]$ScriptDir) {
-    foreach ($p in @((Join-Path $Dir "zstd.exe"),(Join-Path $ScriptDir "zstd.exe"),(Join-Path $ScriptDir "tools\zstd.exe"))) {
-        if (Test-Path $p) { return @{ Type="zstd"; Path=(Resolve-Path $p).Path; NeedCopy=($p -ne (Join-Path $Dir "zstd.exe")) } }
+    # 1) zstd: local package / installed beside downloader / PATH
+    foreach ($p in @(
+        (Join-Path $Dir "zstd.exe"),
+        (Join-Path $ScriptDir "zstd.exe"),
+        (Join-Path $ScriptDir "tools\zstd.exe"),
+        (Find-CommandPath "zstd.exe")
+    )) {
+        if (-not [String]::IsNullOrEmpty($p) -and (Test-Path $p)) {
+            return @{
+                Type="zstd"
+                Path=(Resolve-Path $p).Path
+                NeedCopy=((Resolve-Path $p).Path -ne (Join-Path $Dir "zstd.exe"))
+                Source="local/path"
+            }
+        }
     }
-    foreach ($p in @((Join-Path $Dir "7z.exe"),"$env:ProgramFiles\7-Zip\7z.exe","${env:ProgramFiles(x86)}\7-Zip\7z.exe")) {
-        if (-not [String]::IsNullOrEmpty($p) -and (Test-Path $p)) { return @{ Type="7zip"; Path=(Resolve-Path $p).Path; NeedCopy=$false } }
+
+    # 2) 7-Zip: an existing config from an earlier installation
+    $decoderConfig = Join-Path $Dir "Win7_Downloader_Decoder_Path.txt"
+    if (Test-Path $decoderConfig) {
+        try {
+            $configured = (Get-Content $decoderConfig | Select-Object -First 1).Trim()
+            if (-not [String]::IsNullOrEmpty($configured) -and (Test-Path $configured)) {
+                return @{
+                    Type="7zip"
+                    Path=(Resolve-Path $configured).Path
+                    NeedCopy=$false
+                    Source="saved-config"
+                }
+            }
+        } catch {}
     }
+
+    # 3) Standard locations
+    $sevenCandidates = New-Object System.Collections.ArrayList
+    Add-DecoderCandidate $sevenCandidates (Join-Path $Dir "7z.exe")
+    Add-DecoderCandidate $sevenCandidates (Join-Path $ScriptDir "7z.exe")
+    Add-DecoderCandidate $sevenCandidates (Join-Path $ScriptDir "tools\7z.exe")
+
+    if (-not [String]::IsNullOrEmpty($env:ProgramFiles)) {
+        Add-DecoderCandidate $sevenCandidates (Join-Path $env:ProgramFiles "7-Zip\7z.exe")
+    }
+    if (-not [String]::IsNullOrEmpty(${env:ProgramFiles(x86)})) {
+        Add-DecoderCandidate $sevenCandidates (Join-Path ${env:ProgramFiles(x86)} "7-Zip\7z.exe")
+    }
+
+    # 4) Official 7-Zip registry keys. This is the important custom-install-path fix.
+    foreach ($rp in @(Get-SevenZipRegistryCandidates)) {
+        Add-DecoderCandidate $sevenCandidates $rp
+    }
+
+    # 5) PATH
+    Add-DecoderCandidate $sevenCandidates (Find-CommandPath "7z.exe")
+
+    if ($sevenCandidates.Count -gt 0) {
+        return @{
+            Type="7zip"
+            Path=$sevenCandidates[0]
+            NeedCopy=$false
+            Source="standard/registry/path"
+        }
+    }
+
     return $null
 }
 
 function Entry-MatchesKnownState([string]$Path,$Entry) {
     [byte[]]$now = Read-Bytes $Path $Entry.Offset $Entry.Original.Length
+
     if (Eq $now $Entry.Original) { return $true }
     if (Eq $now $Entry.Patched) { return $true }
-    if ($Entry["AlternateBefore"] -ne $null -and (Eq $now $Entry.AlternateBefore)) { return $true }
+
+    if ($Entry["AlternateBefore"] -ne $null) {
+        if (Eq $now $Entry.AlternateBefore) { return $true }
+    }
+
     return $false
 }
 
 function Profile-MatchesKnownLayout([string]$Path,$Profile) {
     foreach ($entry in $Profile.Entries) {
-        try { if (-not (Entry-MatchesKnownState $Path $entry)) { return $false } } catch { return $false }
+        try {
+            if (-not (Entry-MatchesKnownState $Path $entry)) { return $false }
+        }
+        catch {
+            return $false
+        }
     }
+
     return $true
 }
 
+function Get-ProfileFolderBuild($Profile) {
+    if ($Profile["FolderBuild"] -ne $null) {
+        return [string]$Profile.FolderBuild
+    }
+    return [string]$Profile.Build
+}
+
 function Resolve-PatchProfile([string]$Path,[string]$FolderBuild) {
-    if ($FeverGamesPatchProfiles.ContainsKey($FolderBuild)) { return $FeverGamesPatchProfiles[$FolderBuild] }
-    $matches = @()
+    # First: only layouts that explicitly belong to this folder version.
+    $sameFolder = @()
+
     foreach ($key in $FeverGamesPatchProfiles.Keys) {
         $candidate = $FeverGamesPatchProfiles[$key]
-        if (Profile-MatchesKnownLayout $Path $candidate) { $matches += $candidate }
+        if ((Get-ProfileFolderBuild $candidate) -eq $FolderBuild) {
+            $sameFolder += $candidate
+        }
     }
+
+    $matches = @()
+
+    foreach ($candidate in $sameFolder) {
+        if (Profile-MatchesKnownLayout $Path $candidate) {
+            $matches += $candidate
+        }
+    }
+
     if ($matches.Count -eq 1) {
-        Warn ("Unknown folder version " + $FolderBuild + " matches known binary layout " + $matches[0].Build + ".")
-        Warn "Proceeding with exact-byte validation for that known layout."
         return $matches[0]
     }
-    if ($matches.Count -gt 1) { throw ("Folder version " + $FolderBuild + " matches multiple known layouts; refusing ambiguous patch.") }
+
+    if ($matches.Count -gt 1) {
+        throw ("Folder version " + $FolderBuild + " matches multiple known layouts; refusing ambiguous patch.")
+    }
+
+    # Unknown folder version: retain v1.3 behavior and allow a known
+    # exact binary layout only if exactly one profile matches.
+    if ($sameFolder.Count -eq 0) {
+        foreach ($key in $FeverGamesPatchProfiles.Keys) {
+            $candidate = $FeverGamesPatchProfiles[$key]
+            if (Profile-MatchesKnownLayout $Path $candidate) {
+                $matches += $candidate
+            }
+        }
+
+        if ($matches.Count -eq 1) {
+            Warn ("Unknown folder version " + $FolderBuild + " matches known binary layout " + $matches[0].Build + ".")
+            Warn "Proceeding with exact-byte validation for that known layout."
+            return $matches[0]
+        }
+
+        if ($matches.Count -gt 1) {
+            throw ("Folder version " + $FolderBuild + " matches multiple known layouts; refusing ambiguous patch.")
+        }
+    }
+
+    if ($sameFolder.Count -gt 0) {
+        throw ("Known folder version " + $FolderBuild + " has a changed/unsupported binary layout. None of its exact 5-target profiles match.")
+    }
+
     throw ("Unsupported FeverGames frontend build " + $FolderBuild + ". No known exact-byte layout matches.")
 }
 
 function Patch-Entry([string]$Path,$Entry) {
     [byte[]]$now = Read-Bytes $Path $Entry.Offset $Entry.Original.Length
     Info ($Entry.Name + " @ 0x" + ("{0:X}" -f $Entry.Offset) + ": " + (Hex $now))
-    if (Eq $now $Entry.Patched) { Ok ($Entry.Name + " already patched."); return }
+
+    if (Eq $now $Entry.Patched) {
+        Ok ($Entry.Name + " already patched.")
+        return
+    }
+
     $acceptable = (Eq $now $Entry.Original)
-    if ((-not $acceptable) -and ($Entry["AlternateBefore"] -ne $null)) { $acceptable = (Eq $now $Entry.AlternateBefore) }
-    if (-not $acceptable) { throw ($Entry.Name + " has unexpected bytes; refusing to modify this build.") }
+
+    if ((-not $acceptable) -and ($Entry["AlternateBefore"] -ne $null)) {
+        $acceptable = (Eq $now $Entry.AlternateBefore)
+    }
+
+    if (-not $acceptable) {
+        throw ($Entry.Name + " has unexpected bytes; refusing to modify this build.")
+    }
+
     Write-Bytes $Path $Entry.Offset $Entry.Patched
+
     [byte[]]$verify = Read-Bytes $Path $Entry.Offset $Entry.Patched.Length
-    if (-not (Eq $verify $Entry.Patched)) { throw ($Entry.Name + " verification failed.") }
+
+    if (-not (Eq $verify $Entry.Patched)) {
+        throw ($Entry.Name + " verification failed.")
+    }
+
     Ok ($Entry.Name + " patched.")
 }
 
 function Normalize-InstallerBackup([string]$Path,$Profile) {
     foreach ($entry in $Profile.Entries) {
         [byte[]]$now = Read-Bytes $Path $entry.Offset $entry.Original.Length
-        if (Eq $now $entry.Original) { continue }
-        if (Eq $now $entry.Patched) { Write-Bytes $Path $entry.Offset $entry.Original; continue }
-        if (($entry["AlternateBefore"] -ne $null) -and (Eq $now $entry.AlternateBefore)) { Write-Bytes $Path $entry.Offset $entry.Original; continue }
+
+        if (Eq $now $entry.Original) {
+            continue
+        }
+
+        if (Eq $now $entry.Patched) {
+            Write-Bytes $Path $entry.Offset $entry.Original
+            continue
+        }
+
+        if (($entry["AlternateBefore"] -ne $null) -and (Eq $now $entry.AlternateBefore)) {
+            Write-Bytes $Path $entry.Offset $entry.Original
+            continue
+        }
+
         throw ("Cannot construct clean backup: " + $entry.Name + " bytes are unknown.")
     }
 }
 
 function Find-NativeOriginalDownloader([string]$Live,[string]$Dir) {
-    if ((Test-Path $Live) -and (-not (Is-ManagedExe $Live))) { return $Live }
+    if ((Test-Path $Live) -and (-not (Is-ManagedExe $Live))) {
+        return $Live
+    }
+
     foreach ($p in @(
         (Join-Path $Dir "Win7_Bedrock_Fix_Backup_v1.2\downloadIPC.exe.original"),
         (Join-Path $Dir "downloadIPC.before_win7_integrated_v1.1.exe"),
@@ -160,15 +438,23 @@ function Find-NativeOriginalDownloader([string]$Live,[string]$Dir) {
         (Join-Path $Dir "downloadIPC.real.exe"),
         (Join-Path $Dir "downloadIPC.before_legacy_probe.exe"),
         (Join-Path $Dir "downloadIPC.original.exe")
-    )) { if ((Test-Path $p) -and (-not (Is-ManagedExe $p))) { return $p } }
+    )) {
+        if ((Test-Path $p) -and (-not (Is-ManagedExe $p))) {
+            return $p
+        }
+    }
+
     return $null
 }
 
 Ensure-Admin
+
 $scriptDir = Split-Path -Parent $ThisScript
 . (Join-Path $scriptDir "FeverGames_PatchProfiles_v1.3.ps1")
+
 $work = $null
 $modified = $false
+$copiedZstd = $false
 
 try {
     Write-Host "============================================================"
@@ -176,64 +462,109 @@ try {
     Write-Host " Multi-build exact-byte frontend patch + Win7 downloader"
     Write-Host "============================================================"
     Write-Host ""
+
     Assert-PlatformClosed
-    if ([String]::IsNullOrEmpty($InstallDir)) { throw "InstallDir was not supplied by the rolling version selector." }
+
+    if ([String]::IsNullOrEmpty($InstallDir)) {
+        throw "InstallDir was not supplied by the rolling version selector."
+    }
 
     $InstallDir = (Resolve-Path $InstallDir).Path
     $installer = Join-Path $InstallDir "FeverGamesInstaller.exe"
     $downloader = Join-Path $InstallDir "downloadIPC.exe"
+
     if (-not (Test-Path $installer)) { throw "FeverGamesInstaller.exe is missing." }
     if (-not (Test-Path $downloader)) { throw "downloadIPC.exe is missing." }
+
     Info ("InstallDir: " + $InstallDir)
 
     $folderBuild = Split-Path -Leaf $InstallDir
     $profile = Resolve-PatchProfile $installer $folderBuild
+
     Ok ("Selected frontend patch profile: " + $profile.Build)
 
     $compiler = Find-Compiler
-    if ([String]::IsNullOrEmpty($compiler)) { throw "No compatible .NET C# compiler was found (2.0/3.5/4.x)." }
+    if ([String]::IsNullOrEmpty($compiler)) {
+        throw "No compatible .NET C# compiler was found (2.0/3.5/4.x)."
+    }
     Ok ("C# compiler: " + $compiler)
 
     $decoder = Find-Decoder $InstallDir $scriptDir
-    if ($decoder -eq $null) { throw "No Zstd decoder found. Install 7-Zip, or put standalone zstd.exe in this package's tools folder." }
+    if ($decoder -eq $null) {
+        throw "No Zstd decoder found. Install 7-Zip, or put standalone zstd.exe in this package's tools folder."
+    }
     Ok ("Decoder: " + $decoder.Type + " -> " + $decoder.Path)
+    if ($decoder["Source"] -ne $null) { Info ("Decoder discovery: " + $decoder.Source) }
 
     $source = Join-Path $scriptDir "downloadIPC_Win7_v1.2.cs"
-    if (-not (Test-Path $source)) { throw "downloadIPC_Win7_v1.2.cs is missing from the patch package." }
+    if (-not (Test-Path $source)) {
+        throw "downloadIPC_Win7_v1.2.cs is missing from the patch package."
+    }
 
     $backupDir = Join-Path $InstallDir "Win7_Downloader_Fix_Backup_v1.3"
     $backupInstaller = Join-Path $backupDir "FeverGamesInstaller.exe.original"
     $backupDownloader = Join-Path $backupDir "downloadIPC.exe.original"
     $backupInfo = Join-Path $backupDir "backup_info.txt"
-    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
+
+    if (-not (Test-Path $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir | Out-Null
+    }
 
     $work = Join-Path $env:TEMP ("FeverGames_LegacyWindows_v1.3_" + $PID)
-    if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+
+    if (Test-Path $work) {
+        Remove-Item $work -Recurse -Force
+    }
+
     New-Item -ItemType Directory -Path $work | Out-Null
+
     $patchedInstaller = Join-Path $work "FeverGamesInstaller.patched.exe"
     $compiledDownloader = Join-Path $work "downloadIPC.v1.2.exe"
+
     Copy-Item $installer $patchedInstaller -Force
 
-    foreach ($entry in $profile.Entries) { Patch-Entry $patchedInstaller $entry }
+    foreach ($entry in $profile.Entries) {
+        Patch-Entry $patchedInstaller $entry
+    }
 
     Info "Compiling Win7 integrated downloadIPC core v1.2..."
+
     & $compiler /nologo /target:exe /optimize+ ("/out:" + $compiledDownloader) $source
-    if (($LASTEXITCODE -ne 0) -or (-not (Test-Path $compiledDownloader))) { throw ("C# compile failed, csc exit=" + $LASTEXITCODE) }
-    if (-not (Is-ManagedExe $compiledDownloader)) { throw "Compiled downloader did not validate as a managed .NET executable." }
+
+    if (($LASTEXITCODE -ne 0) -or (-not (Test-Path $compiledDownloader))) {
+        throw ("C# compile failed, csc exit=" + $LASTEXITCODE)
+    }
+
+    if (-not (Is-ManagedExe $compiledDownloader)) {
+        if (Test-Path $compiledDownloader) {
+            try { Info ("Compiled downloader size: " + (Get-Item $compiledDownloader).Length + " bytes") } catch {}
+            try { Info ("Compiled downloader SHA256: " + (Get-Sha256 $compiledDownloader)) } catch {}
+        }
+        throw "Compiled downloader PE header does not contain a CLR/COM descriptor."
+    }
+
     Ok "Win7 downloader compiled successfully."
 
     if (-not (Test-Path $backupInstaller)) {
         Copy-Item $installer $backupInstaller -Force
         Normalize-InstallerBackup $backupInstaller $profile
         Ok "Clean original FeverGamesInstaller backup created."
-    } else { Info "Installer backup already exists; not overwritten." }
+    } else {
+        Info "Installer backup already exists; not overwritten."
+    }
 
     if (-not (Test-Path $backupDownloader)) {
         $nativeOriginal = Find-NativeOriginalDownloader $downloader $InstallDir
-        if ([String]::IsNullOrEmpty($nativeOriginal)) { throw "Could not find a native/original downloadIPC.exe for rollback backup." }
+
+        if ([String]::IsNullOrEmpty($nativeOriginal)) {
+            throw "Could not find a native/original downloadIPC.exe for rollback backup."
+        }
+
         Copy-Item $nativeOriginal $backupDownloader -Force
         Ok ("Original native downloadIPC backup created from: " + $nativeOriginal)
-    } else { Info "Downloader backup already exists; not overwritten." }
+    } else {
+        Info "Downloader backup already exists; not overwritten."
+    }
 
     @(
         ("FeverGames Legacy Windows Downloader v" + $PackageVersion),
@@ -245,10 +576,20 @@ try {
         ("downloadIPC original SHA256: " + (Get-Sha256 $backupDownloader))
     ) | Out-File -FilePath $backupInfo -Encoding UTF8
 
+    $decoderConfig = Join-Path $InstallDir "Win7_Downloader_Decoder_Path.txt"
+
+    if ($decoder.Type -eq "7zip") {
+        $decoder.Path | Out-File -FilePath $decoderConfig -Encoding UTF8
+        Ok ("Saved custom 7-Zip path for runtime: " + $decoder.Path)
+    } elseif (Test-Path $decoderConfig) {
+        Remove-Item $decoderConfig -Force -ErrorAction SilentlyContinue
+    }
+
     if ($decoder.Type -eq "zstd" -and $decoder.NeedCopy) {
         $destZstd = Join-Path $InstallDir "zstd.exe"
         Copy-Item $decoder.Path $destZstd -Force
         (Get-Sha256 $destZstd) | Out-File (Join-Path $backupDir "copied_zstd.sha256") -Encoding ASCII
+        $copiedZstd = $true
         Ok "Standalone zstd.exe copied beside downloadIPC.exe."
     }
 
@@ -258,11 +599,18 @@ try {
 
     foreach ($entry in $profile.Entries) {
         [byte[]]$verify = Read-Bytes $installer $entry.Offset $entry.Patched.Length
-        if (-not (Eq $verify $entry.Patched)) { throw ("Post-install verification failed: " + $entry.Name) }
+
+        if (-not (Eq $verify $entry.Patched)) {
+            throw ("Post-install verification failed: " + $entry.Name)
+        }
     }
-    if (-not (Is-ManagedExe $downloader)) { throw "Post-install downloadIPC verification failed." }
+
+    if (-not (Is-ManagedExe $downloader)) {
+        throw "Post-install downloadIPC verification failed."
+    }
 
     $marker = Join-Path $InstallDir "Win7_Downloader_Fix_v1.3.installed.txt"
+
     @(
         ("FeverGames Legacy Windows Downloader v" + $PackageVersion),
         ("Installed: " + (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")),
@@ -277,26 +625,41 @@ try {
     Write-Host ""
     Ok "ALL-IN-ONE INSTALL SUCCESS."
     Info "Now open FeverGames normally and test a download."
-    Info "Use 02_Check_Status.cmd to verify the newest version folder."
+    Info "Use 02_检查状态.cmd to verify the newest version folder."
 }
 catch {
     Write-Host ""
     Err $_.Exception.Message
+
     if ($modified) {
         Warn "Install failed after live files were changed. Rolling back..."
+
         try {
-            if (Test-Path $backupInstaller) { Copy-Item $backupInstaller $installer -Force }
-            if (Test-Path $backupDownloader) { Copy-Item $backupDownloader $downloader -Force }
+            if (Test-Path $backupInstaller) {
+                Copy-Item $backupInstaller $installer -Force
+            }
+
+            if (Test-Path $backupDownloader) {
+                Copy-Item $backupDownloader $downloader -Force
+            }
+
             Ok "Automatic rollback completed."
-        } catch {
+        }
+        catch {
             Err ("Automatic rollback also failed: " + $_.Exception.Message)
             Err ("Use the backup folder manually: " + $backupDir)
         }
     }
+
     exit 1
 }
 finally {
     if (-not [String]::IsNullOrEmpty($work)) {
-        try { if (Test-Path $work) { Remove-Item $work -Recurse -Force } } catch {}
+        try {
+            if (Test-Path $work) {
+                Remove-Item $work -Recurse -Force
+            }
+        }
+        catch {}
     }
 }

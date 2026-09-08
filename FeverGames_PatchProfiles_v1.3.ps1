@@ -1,5 +1,10 @@
-# FeverGames frontend patch profiles.
+﻿# FeverGames frontend patch profiles.
 # Exact-byte validated. PowerShell 2.0 compatible.
+#
+# IMPORTANT:
+# A folder version is not assumed to identify one binary layout.
+# 1.18.42.14 is known to exist in at least two layouts.
+# Profile selection therefore uses FolderBuild + all 5 exact target-byte checks.
 
 [byte[]]$FG_Getter81 = @(
     0xC7,0x01,0x38,0x2E,0x31,0x00,
@@ -21,8 +26,10 @@
 
 $FeverGamesPatchProfiles = @{}
 
-$FeverGamesPatchProfiles["1.18.42.12"] = @{
-    Build = "1.18.42.12"
+$FeverGamesPatchProfiles["1.18.42.12-A"] = @{
+    Build = "1.18.42.12 / layout A"
+    FolderBuild = "1.18.42.12"
+    InstallerOriginalSha256 = ""
     Entries = @(
         @{
             Key="GateA"; Name="Gate A - central Win10 helper"; Offset=[Int64]0xA64460
@@ -56,8 +63,10 @@ $FeverGamesPatchProfiles["1.18.42.12"] = @{
     )
 }
 
-$FeverGamesPatchProfiles["1.18.42.14"] = @{
-    Build = "1.18.42.14"
+$FeverGamesPatchProfiles["1.18.42.14-A"] = @{
+    Build = "1.18.42.14 / layout A"
+    FolderBuild = "1.18.42.14"
+    InstallerOriginalSha256 = "4ce71c80f24f585e599e2f4c1bbd5c66a41e46eb3f3c613d62a854cafad00433"
     Entries = @(
         @{
             Key="GateA"; Name="Gate A - central Win10 helper"; Offset=[Int64]0xA64C70
@@ -84,6 +93,43 @@ $FeverGamesPatchProfiles["1.18.42.14"] = @{
             Original=[byte[]]@(
                 0x48,0x89,0x4C,0x24,0x08,0x53,0x48,0x83,0xEC,0x20,0x48,0x8B,0xD9,
                 0x8B,0x15,0x35,0x23,0x23,0x04,0x65,0x48,0x8B,0x04,0x25,0x58,0x00,0x00,0x00,0xB9
+            )
+            Patched=$FG_Getter81
+            AlternateBefore=$FG_Getter10
+        }
+    )
+}
+
+$FeverGamesPatchProfiles["1.18.42.14-B"] = @{
+    Build = "1.18.42.14 / layout B"
+    FolderBuild = "1.18.42.14"
+    InstallerOriginalSha256 = "0a2a9568ac788227f0815e3c23761cadc11b51ee4ba9b86336cb2abf61e178e9"
+    Entries = @(
+        @{
+            Key="GateA"; Name="Gate A - central Win10 helper"; Offset=[Int64]0xA64C50
+            Original=[byte[]]@(0x40,0x53,0x48,0x81,0xEC,0x50)
+            Patched=[byte[]]@(0xB8,0x01,0x00,0x00,0x00,0xC3)
+        },
+        @{
+            Key="GateB"; Name="Gate B - checkSystemVersion caller"; Offset=[Int64]0x6EE614
+            Original=[byte[]]@(0x0F,0x85,0xB3,0x00,0x00,0x00)
+            Patched=[byte[]]@(0x90,0xE9,0xB3,0x00,0x00,0x00)
+        },
+        @{
+            Key="NetLabel"; Name="download_check os-ver label Win7 -> Win8.1"; Offset=[Int64]0xA0834C
+            Original=[byte[]]@(0x48,0x8D,0x15,0x35,0x74,0x4B,0x00)
+            Patched=[byte[]]@(0x48,0x8D,0x15,0x55,0x74,0x4B,0x00)
+        },
+        @{
+            Key="NetMinor"; Name="download_check minor 1 -> 3"; Offset=[Int64]0xA083C2
+            Original=[byte[]]@(0x8B,0x55,0xA7)
+            Patched=[byte[]]@(0x6A,0x03,0x5A)
+        },
+        @{
+            Key="Getter"; Name="downloadIPC sysVer getter -> 8.1"; Offset=[Int64]0xA09A10
+            Original=[byte[]]@(
+                0x48,0x89,0x4C,0x24,0x08,0x53,0x48,0x83,0xEC,0x20,0x48,0x8B,0xD9,
+                0x8B,0x15,0x75,0x23,0x23,0x04,0x65,0x48,0x8B,0x04,0x25,0x58,0x00,0x00,0x00,0xB9
             )
             Patched=$FG_Getter81
             AlternateBefore=$FG_Getter10

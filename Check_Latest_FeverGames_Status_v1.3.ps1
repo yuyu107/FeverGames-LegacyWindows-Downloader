@@ -1,4 +1,4 @@
-param([string]$InstallDir = "")
+﻿param([string]$InstallDir = "")
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -9,7 +9,20 @@ try {
     Show-FeverGamesVersionFolders $items 5
 
     $target = Get-NewestCompleteFeverGamesFolder $InstallDir
+
+    if ($target -eq $null) {
+        $manualPath = Ask-FeverGamesInstallPath
+        if (-not [String]::IsNullOrEmpty($manualPath)) {
+            $InstallDir = $manualPath
+            $items = @(Get-FeverGamesVersionFolders $InstallDir)
+            Show-FeverGamesVersionFolders $items 5
+            $target = Get-NewestCompleteFeverGamesFolder $InstallDir
+        }
+    }
+
     if ($target -eq $null) { throw "No complete FeverGames version folder found." }
+
+    Save-FeverGamesInstallRoot $target.Path
 
     Write-Host ""
     Write-Host ("[INFO] Checking newest complete version: " + $target.Name)

@@ -1,40 +1,23 @@
-FeverGames Legacy Windows Downloader v1.3.1
+﻿FeverGames Legacy Windows Downloader v1.3.2
+============================================================
 
-适用系统：Windows 7 SP1 x64
+用途
+----
+用于恢复发烧游戏（FeverGames）新版下载后端在 Windows 7 SP1 x64 上的运行能力。
+本工具解决的是发烧游戏“下载流程兼容”，不是保证所有下载下来的游戏本体都能在 Windows 7 上运行。
 
-【最简单的使用方法】
-1. 正常安装或更新发烧游戏（FeverGames），然后完全退出平台。
-2. 确保电脑中有支持 .zst 的 7-Zip；也可以将可在 Windows 7 使用的 zstd.exe 放到 tools\zstd.exe。
-3. 如果使用 Releases 中的 v1.3.1 ZIP，双击：01_一键安装.cmd
-   如果直接下载 GitHub 源码，双击：01_Zero_Start_One_Click_Install.cmd
-4. 安装结束后会自动进行状态检查。
-5. 如需手动检查状态，运行 02_检查状态.cmd（源码中为 02_Check_Status.cmd）。
-6. 如需恢复官方文件，运行 03_恢复官方文件.cmd（源码中为 03_Restore_Official_Original.cmd）。
-7. 遇到问题可运行 04_收集诊断.cmd（源码中为 04_Collect_Diagnostics.cmd）。
+v1.3.2 主要修复
+----------------
+1. 修复部分较原生 Windows 7 / PowerShell 2.0 环境中，对刚编译出的 .NET downloadIPC.exe 发生误判并中止安装的问题。
+2. v1.3.1 使用当前 PowerShell / CLR 去识别刚由 .NET 4 csc.exe 生成的程序集；旧 CLR 可能把“当前 CLR 无法加载”误判成“不是有效的托管 EXE”。
+3. v1.3.2 改为直接读取 EXE 的 PE Optional Header，并检查 CLR / COM Descriptor。
+4. 状态检查同步使用同一套 CLR-independent 判断。
+5. 如果编译后验证仍失败，会额外输出生成文件大小与 SHA-256。
+6. 该修复已由一台此前 v1.3.1 会稳定报 managed EXE 验证错误的 Windows 7 实机复测，修正后的验证逻辑可以正常完成安装。
 
-【v1.3.1 新增】
-- 新增 FeverGames 1.18.42.14 / layout B 精确补丁配置。
-- 同一个 1.18.42.14 版本号出现不同 FeverGamesInstaller.exe 布局时，会根据 5 个目标位置的真实字节完整匹配，不会只看版本号盲目修补。
-- 支持 FeverGames 安装在自定义目录；自动查找失败时，可直接拖入 FeverGames 根目录、数字版本目录或 FeverGamesInstaller.exe。
-- 支持 7-Zip 安装在自定义目录。
-- 修复 Windows 7 下 UAC 一键安装等待与 PowerShell 2.0 保存自定义路径的问题。
+除上述验证逻辑外，layout A/B、5 点精确字节补丁、已验证的 v1.2 .NET 下载核心、自定义 FeverGames 路径、7-Zip 检测、UAC 等待与回滚流程均保持 v1.3.1 行为。
 
-【已验证】
-- Windows 7 SP1 x64
-- FeverGames 1.18.42.12
-- FeverGames 1.18.42.14（包含 v1.3.1 新增的 layout B）
-- 1.18.42.14 / layout B 已完成《我的世界》基岩互通版完整下载、启动并进入世界测试
+Release 包运行 01_一键安装.cmd；源码仓库运行 01_Zero_Start_One_Click_Install.cmd。
+正常状态应包含 Frontend patch count: 5/5、downloadIPC.exe = managed Win7 replacement、rollback backup = COMPLETE、RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD。
 
-正常状态应包含：
-Patch profile: 1.18.42.14 / layout B
-Frontend patch count: 5/5
-downloadIPC.exe = managed Win7 replacement
-rollback backup = COMPLETE
-RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
-
-提示：大文件下载后的本地拼接 / MD5 阶段，以及最后大量极小 chunk / 小文件阶段可能短暂显示 0 B/s，这不一定表示下载卡死。
-
-本项目不实现账号登录绕过，不分发游戏内容，也不需要账号密码。公开日志、Issue 或诊断信息中请勿包含 Token、Cookie、PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等私密信息。
-
-完整说明请看 README.md。
-最新正式版：https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.1
+版本：v1.3.2

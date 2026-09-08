@@ -1,4 +1,4 @@
-param([string]$InstallDir = "")
+﻿param([string]$InstallDir = "")
 
 $ErrorActionPreference = "Stop"
 $ThisScript = $MyInvocation.MyCommand.Definition
@@ -82,6 +82,12 @@ try {
         } else {
             Warn "zstd.exe was changed after installation; it was kept."
         }
+    }
+
+    $decoderConfig = Join-Path $InstallDir "Win7_Downloader_Decoder_Path.txt"
+    if (Test-Path $decoderConfig) {
+        Remove-Item $decoderConfig -Force -ErrorAction SilentlyContinue
+        Ok "Saved decoder path removed."
     }
 
     foreach ($markerName in @("Win7_Downloader_Fix_v1.3.installed.txt","Win7_Bedrock_Fix_v1.2.installed.txt")) {
