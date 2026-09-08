@@ -21,6 +21,33 @@ Release ZIP:
 core\
 ```
 
+A source checkout keeps only the CMD entry points in the repository root. PowerShell implementation details are now organized under `scripts/`.
+
+## Repository layout
+
+```text
+/
+├─ 01_Zero_Start_One_Click_Install.cmd
+├─ 02_Check_Status.cmd
+├─ 03_Restore_Official_Original.cmd
+├─ 04_Collect_Diagnostics.cmd
+├─ 05_Clear_Win7_Downloader_Cache_Optional.cmd
+├─ scripts/
+│  ├─ current/          # current v1.3.x implementation
+│  └─ legacy-v1.2/     # historical v1.2 scripts
+├─ docs/
+│  ├─ COMPATIBILITY.md
+│  ├─ TECHNICAL.md
+│  └─ releases/         # historical release notes and checksums
+└─ src/                 # packed downloadIPC C# source
+```
+
+- [Compatibility notes](docs/COMPATIBILITY.md)
+- [Technical notes](docs/TECHNICAL.md)
+- [Documentation index](docs/README.md)
+
+Normal users should prefer the Release ZIP. `scripts/legacy-v1.2/` is retained only for historical reference, regression work, and old-install recovery context.
+
 ## v1.3.2 fix
 
 On some relatively stock Windows 7 / PowerShell 2.0 systems, v1.3.1 could successfully invoke the .NET 4 C# compiler and create the replacement downloader, but then stop with:
