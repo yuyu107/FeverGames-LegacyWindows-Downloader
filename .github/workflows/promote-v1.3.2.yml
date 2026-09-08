@@ -1,0 +1,352 @@
+name: Promote v1.3.2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/promote-v1.3.2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download verified v1.3.1 base package
+        run: |
+          mkdir -p build
+          curl -fL --retry 3 \
+            -o build/v1.3.1.zip \
+            'https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.3.1/FeverGames_LegacyWindows_Downloader_v1.3.1.zip'
+
+      - name: Promote test fix and sync source
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib
+          import re
+          import shutil
+          import zipfile
+
+          repo = Path.cwd()
+          build = repo / 'build'
+          extracted = build / 'extracted'
+          if extracted.exists():
+              shutil.rmtree(extracted)
+          extracted.mkdir(parents=True)
+
+          with zipfile.ZipFile(build / 'v1.3.1.zip', 'r') as z:
+              z.extractall(extracted)
+
+          top_dirs = [p for p in extracted.iterdir() if p.is_dir()]
+          if len(top_dirs) != 1:
+              raise SystemExit(f'Expected one top-level package directory, found: {top_dirs}')
+          package = top_dirs[0]
+
+          old_pattern = re.compile(
+              r'function Is-ManagedExe\(\[string\]\$Path\)\s*\{.*?\n\}',
+              re.S,
+          )
+
+          replacement = r'''function Is-ManagedExe([string]$Path) {
+              if (-not (Test-Path $Path -PathType Leaf)) { return $false }
+
+              $fs = $null
+              $br = $null
+              try {
+                  $fs = New-Object System.IO.FileStream(
+                      $Path,
+                      [System.IO.FileMode]::Open,
+                      [System.IO.FileAccess]::Read,
+                      [System.IO.FileShare]::ReadWrite
+                  )
+                  $br = New-Object System.IO.BinaryReader -ArgumentList $fs
+
+                  if ($fs.Length -lt 256) { return $false }
+                  if ($br.ReadUInt16() -ne 0x5A4D) { return $false }
+
+                  [void]$fs.Seek(0x3C,[System.IO.SeekOrigin]::Begin)
+                  $peOffset = $br.ReadInt32()
+                  if ($peOffset -lt 0 -or ([Int64]$peOffset + 24) -gt $fs.Length) { return $false }
+
+                  [void]$fs.Seek($peOffset,[System.IO.SeekOrigin]::Begin)
+                  if ($br.ReadUInt32() -ne 0x00004550) { return $false }
+
+                  [void]$fs.Seek(([Int64]$peOffset + 20),[System.IO.SeekOrigin]::Begin)
+                  $optionalSize = $br.ReadUInt16()
+                  $optionalStart = [Int64]$peOffset + 24
+                  if ($optionalSize -lt 2 -or ($optionalStart + $optionalSize) -gt $fs.Length) { return $false }
+
+                  [void]$fs.Seek($optionalStart,[System.IO.SeekOrigin]::Begin)
+                  $magic = $br.ReadUInt16()
+                  if ($magic -eq 0x10B) {
+                      $dataDirectoryStart = $optionalStart + 96
+                  }
+                  elseif ($magic -eq 0x20B) {
+                      $dataDirectoryStart = $optionalStart + 112
+                  }
+                  else {
+                      return $false
+                  }
+
+                  $clrEntry = $dataDirectoryStart + (14 * 8)
+                  if (($clrEntry + 8) -gt ($optionalStart + $optionalSize)) { return $false }
+
+                  [void]$fs.Seek($clrEntry,[System.IO.SeekOrigin]::Begin)
+                  $clrRva = $br.ReadUInt32()
+                  $clrSize = $br.ReadUInt32()
+                  return (($clrRva -ne 0) -and ($clrSize -ne 0))
+              }
+              catch {
+                  return $false
+              }
+              finally {
+                  if ($br -ne $null) { $br.Close() }
+                  elseif ($fs -ne $null) { $fs.Close() }
+              }
+          }'''
+
+          for rel in ['core/Install_From_Zero_v1.3.ps1', 'core/Check_Status_v1.3.ps1']:
+              p = package / rel
+              text = p.read_text(encoding='utf-8-sig')
+              text, count = old_pattern.subn(replacement, text, count=1)
+              if count != 1:
+                  raise SystemExit(f'Could not safely replace Is-ManagedExe in {rel}')
+
+              if rel.endswith('Install_From_Zero_v1.3.ps1'):
+                  text = text.replace('$PackageVersion = "1.3.1"', '$PackageVersion = "1.3.2"')
+                  text = text.replace('$PackageVersion = "1.3.0"', '$PackageVersion = "1.3.2"')
+                  needle = 'if (-not (Is-ManagedExe $compiledDownloader)) { throw "Compiled downloader did not validate as a managed .NET executable." }'
+                  diagnostic = '''if (-not (Is-ManagedExe $compiledDownloader)) {
+              if (Test-Path $compiledDownloader) {
+                  try { Info ("Compiled downloader size: " + (Get-Item $compiledDownloader).Length + " bytes") } catch {}
+                  try { Info ("Compiled downloader SHA256: " + (Get-Sha256 $compiledDownloader)) } catch {}
+              }
+              throw "Compiled downloader PE header does not contain a CLR/COM descriptor."
+          }'''
+                  if needle not in text:
+                      raise SystemExit('Expected compiled-downloader validation line not found.')
+                  text = text.replace(needle, diagnostic, 1)
+              else:
+                  text = text.replace('FeverGames Legacy Windows Downloader v1.3.1 - Status', 'FeverGames Legacy Windows Downloader v1.3.2 - Status')
+
+              p.write_text(text, encoding='utf-8-sig')
+
+          p = package / 'core/Install_Latest_FeverGames_v1.3.ps1'
+          t = p.read_text(encoding='utf-8-sig').replace('FeverGames Legacy Windows Downloader v1.3.1', 'FeverGames Legacy Windows Downloader v1.3.2')
+          p.write_text(t, encoding='utf-8-sig')
+
+          p = package / 'core/Collect_Diagnostics_v1.3.ps1'
+          t = p.read_text(encoding='utf-8-sig').replace('FeverGames_v1.3.1_Diagnostic_Result', 'FeverGames_v1.3.2_Diagnostic_Result')
+          p.write_text(t, encoding='utf-8-sig')
+
+          p = package / '01_一键安装.cmd'
+          t = p.read_text(encoding='utf-8-sig').replace('FeverGames Legacy Windows Downloader v1.3.1', 'FeverGames Legacy Windows Downloader v1.3.2')
+          p.write_text(t, encoding='utf-8-sig')
+
+          version_text = '''FeverGames Legacy Windows Downloader
+          Version: 1.3.2
+          Release status: Stable
+          Verified frontend layouts:
+          - FeverGames 1.18.42.12 / layout A
+          - FeverGames 1.18.42.14 / layout A
+          - FeverGames 1.18.42.14 / layout B
+          Verified 1.18.42.14 layout B original SHA256:
+          0a2a9568ac788227f0815e3c23761cadc11b51ee4ba9b86336cb2abf61e178e9
+
+          v1.3.2 compatibility fix:
+          - Managed downloadIPC validation is CLR-independent and PowerShell 2.0 safe.
+          - Verified on a Windows 7 environment that failed v1.3.1 validation but succeeds with v1.3.2 logic.
+          '''
+          version_text = '\n'.join(line.strip() for line in version_text.splitlines()).strip() + '\n'
+          (package / 'core/VERSION.txt').write_text(version_text, encoding='utf-8-sig')
+
+          guide = '''FeverGames Legacy Windows Downloader v1.3.2
+          ============================================================
+
+          用途
+          ----
+          用于恢复 FeverGames 新版下载后端在 Windows 7 SP1 x64 上的运行能力。
+
+          本工具解决的是 FeverGames 的“下载流程兼容”，不是保证所有下载下来的游戏本体都能在 Windows 7 上运行。
+
+          已完成实际验证：
+          Windows 7 + FeverGames 1.18.42.14（layout B）
+          → 基岩互通版完整下载完成
+          → 使用 VxKex 启动
+          → 成功进入世界。
+
+          v1.3.2 主要修复
+          ----------------
+          1. 修复部分较原生 Windows 7 / PowerShell 2.0 环境中的 .NET 下载器误判。
+          2. v1.3.1 会让当前 PowerShell / CLR 尝试加载刚由 .NET 4 编译器生成的 downloadIPC.exe；在旧 CLR 环境中，文件可能已经正常生成，但验证仍会失败。
+          3. v1.3.2 改为直接读取 EXE 的 PE Optional Header，并检查 CLR / COM Descriptor，不再要求当前 PowerShell CLR 能加载目标程序集。
+          4. 状态检查使用同一套 CLR-independent 判断，避免“实际安装成功但检查状态又误报失败”。
+          5. 编译后验证失败时会额外输出文件大小与 SHA-256，方便继续诊断。
+          6. 该修复已由一台 v1.3.1 会报“Compiled downloader did not validate as a managed .NET executable.”的 Windows 7 实机验证；v1.3.2 测试逻辑可正常完成安装。
+
+          除上述验证逻辑外，前端 layout A/B、5 点精确字节补丁、v1.2 .NET 下载核心、自定义 FeverGames 路径、7-Zip 检测和 UAC 流程均保持 v1.3.1 行为。
+
+          最简单的使用方法
+          ----------------
+          1. 正常安装或更新 FeverGames。
+          2. 完全退出 FeverGames。
+          3. 确保电脑有可用的 7-Zip：默认或自定义安装目录均可；也可以使用 Windows 7 可用的独立 zstd.exe。
+          4. 双击：01_一键安装.cmd
+          5. 接受 UAC 管理员权限提示，并等待脚本完成。
+          6. 安装成功后脚本会自动检查状态。
+
+          自定义 FeverGames 安装位置
+          --------------------------
+          会自动尝试已保存路径、Windows 卸载信息、桌面 / 开始菜单快捷方式、各磁盘常见目录和 Program Files。
+          如果仍然找不到，可以直接拖入 FeverGames 根目录、数字版本目录或 FeverGamesInstaller.exe。
+
+          正常状态
+          --------
+          Patch profile: 1.18.42.14 / layout B
+          Frontend patch count: 5/5
+          downloadIPC.exe = managed Win7 replacement
+          rollback backup = COMPLETE
+          RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
+
+          其他按钮
+          --------
+          02_检查状态.cmd：只检查当前是否安装成功，不修改文件。
+          03_恢复官方文件.cmd：恢复 FeverGames 官方原始文件。
+          04_收集诊断.cmd：遇到问题时收集诊断结果。
+
+          已验证前端布局
+          --------------
+          FeverGames 1.18.42.12 / layout A
+          FeverGames 1.18.42.14 / layout A
+          FeverGames 1.18.42.14 / layout B
+
+          1.18.42.14 / layout B 原版 FeverGamesInstaller.exe SHA-256：
+          0a2a9568ac788227f0815e3c23761cadc11b51ee4ba9b86336cb2abf61e178e9
+
+          已知性能现象
+          ------------
+          当前稳定版优先保证正确性和兼容性。大文件本地拼接 / MD5 或尾部大量小 chunk 阶段可能暂时显示 0 B/s 或推进较慢，这不一定代表网络卡死。
+          实验性的 DLL 直解 Zstd、并发 / 流水线重构暂不放进 v1.3.2。
+
+          安全和隐私
+          ----------
+          本项目不实现账号登录绕过，不分发游戏内容，也不需要账号密码。
+          请勿公开 PRIVATE Manifest response、AES key、Token、Cookie、deviceId、uid、sig、secKey 或其它账号 / 临时鉴权信息。
+
+          项目
+          ----
+          GitHub: yuyu107/FeverGames-LegacyWindows-Downloader
+          版本：v1.3.2
+          '''
+          guide = '\n'.join(line.strip() for line in guide.splitlines()).strip() + '\n'
+          (package / '使用说明.txt').write_text(guide, encoding='utf-8-sig')
+
+          new_package = extracted / 'FeverGames_LegacyWindows_Downloader_v1.3.2'
+          if new_package.exists():
+              shutil.rmtree(new_package)
+          package.rename(new_package)
+          package = new_package
+
+          # Sync the exact Release core back into the source tree.
+          core_files = [
+              'Check_Latest_FeverGames_Status_v1.3.ps1',
+              'Check_Status_v1.3.ps1',
+              'Collect_Diagnostics_v1.3.ps1',
+              'FeverGames_PatchProfiles_v1.3.ps1',
+              'FeverGames_VersionResolver_v1.3.ps1',
+              'Install_From_Zero_v1.3.ps1',
+              'Install_Latest_FeverGames_v1.3.ps1',
+              'Restore_Latest_FeverGames_v1.3.ps1',
+              'Restore_Official_Original_v1.3.ps1',
+              'Run_Install_Elevated_v1.3.ps1',
+          ]
+          for name in core_files:
+              shutil.copy2(package / 'core' / name, repo / name)
+          shutil.copy2(package / 'core' / 'VERSION.txt', repo / 'VERSION.txt')
+          shutil.copy2(package / '使用说明.txt', repo / '00_使用说明.txt')
+
+          (repo / '01_Zero_Start_One_Click_Install.cmd').write_text(r'''@echo off
+          setlocal
+          cd /d "%~dp0"
+
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Prepare_Source_v1.2.ps1"
+          if errorlevel 1 goto :end
+
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run_Install_Elevated_v1.3.ps1"
+          set "RC=%ERRORLEVEL%"
+
+          echo.
+          if not "%RC%"=="0" (
+              echo [ERR] Installation did not complete successfully. Exit code: %RC%
+              goto :end
+          )
+
+          echo [OK] Installer returned success.
+          echo [INFO] Running status verification...
+          echo.
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Check_Latest_FeverGames_Status_v1.3.ps1"
+
+          :end
+          echo.
+          pause
+          '''.replace('          ', ''), encoding='utf-8')
+
+          wrappers = {
+              '02_Check_Status.cmd': '@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Check_Latest_FeverGames_Status_v1.3.ps1"\necho.\npause\n',
+              '03_Restore_Official_Original.cmd': '@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Restore_Latest_FeverGames_v1.3.ps1"\necho.\npause\n',
+              '04_Collect_Diagnostics.cmd': '@echo off\nsetlocal\ncd /d "%~dp0"\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Collect_Diagnostics_v1.3.ps1"\necho.\necho [INFO] Diagnostic result is created next to this CMD file.\necho.\npause\n',
+          }
+          for name, text in wrappers.items():
+              (repo / name).write_text(text, encoding='utf-8')
+
+          # Build the formal Release ZIP with UTF-8 filenames.
+          out_zip = build / 'FeverGames_LegacyWindows_Downloader_v1.3.2.zip'
+          with zipfile.ZipFile(out_zip, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for p in sorted(package.rglob('*')):
+                  if p.is_file():
+                      arc = p.relative_to(extracted).as_posix()
+                      z.write(p, arc)
+
+          digest = hashlib.sha256(out_zip.read_bytes()).hexdigest()
+          sha_text = f'{digest}  {out_zip.name}\n'
+          (repo / 'RELEASE_SHA256_v1.3.2.txt').write_text(sha_text, encoding='ascii')
+          (build / 'SHA256_v1.3.2.txt').write_text(sha_text, encoding='ascii')
+          print('Release SHA256:', digest)
+
+          # Remove one-off test/promotion workflows from the source commit.
+          for rel in [
+              '.github/workflows/build-v1.3.2-test1.yml',
+              '.github/workflows/promote-v1.3.2.yml',
+          ]:
+              p = repo / rel
+              if p.exists():
+                  p.unlink()
+
+      - name: Commit promoted source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "release: promote verified fix to v1.3.2"
+          git push origin HEAD:main
+
+      - name: Publish v1.3.2 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT="$(git rev-parse HEAD)"
+          gh release create v1.3.2 \
+            build/FeverGames_LegacyWindows_Downloader_v1.3.2.zip \
+            RELEASE_SHA256_v1.3.2.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$COMMIT" \
+            --title "v1.3.2 - 修复 PowerShell 2.0 / CLR 托管 EXE 验证误判" \
+            --notes-file RELEASE_NOTES_v1.3.2_CN.md
