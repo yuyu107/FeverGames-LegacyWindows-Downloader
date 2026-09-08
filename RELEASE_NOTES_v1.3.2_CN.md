@@ -40,7 +40,7 @@ v1.3.1 使用：
 - 改为直接读取 PE Optional Header，并检查 CLR / COM Descriptor 数据目录；
 - 状态检查脚本同步使用同一套 CLR-independent 判断，避免安装成功后再次误报；
 - 编译结果验证仍保留 fail-safe：如果 PE 中不存在有效 CLR Descriptor，仍会在正式覆盖前停止；
-- 验证失败时额外输出生成文件大小与 SHA-256，方便继续诊断。
+- 失败信息会明确指出 PE 中缺少 CLR / COM Descriptor，便于区分真正的编译异常与旧 CLR 误判。
 
 ## 实机验证
 
