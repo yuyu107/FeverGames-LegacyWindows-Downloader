@@ -4,7 +4,8 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 . (Join-Path $scriptDir "FeverGames_VersionResolver_v1.3.ps1")
 
-$packageRoot = Split-Path -Parent $scriptDir
+# scripts\current -> scripts -> repository root
+$packageRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
 $result = Join-Path $packageRoot "FeverGames_v1.3.2_Diagnostic_Result"
 
 if (Test-Path $result) {

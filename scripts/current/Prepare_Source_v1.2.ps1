@@ -3,7 +3,10 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 if ([String]::IsNullOrEmpty($scriptDir)) { $scriptDir = (Get-Location).Path }
 
-$packed = Join-Path $scriptDir "src\downloadIPC_Win7_v1.2.cs.gz.b64"
+# Source checkouts keep runtime scripts under scripts\current and the packed
+# downloader source under the repository-level src directory.
+$repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
+$packed = Join-Path $repoRoot "src\downloadIPC_Win7_v1.2.cs.gz.b64"
 $out = Join-Path $scriptDir "downloadIPC_Win7_v1.2.cs"
 
 if (Test-Path $out) {
@@ -27,11 +30,9 @@ try {
 
     try {
         [byte[]]$buf = New-Object byte[] 65536
-
         while (($n = $gzip.Read($buf,0,$buf.Length)) -gt 0) {
             $output.Write($buf,0,$n)
         }
-
         [IO.File]::WriteAllBytes($out,$output.ToArray())
     }
     finally {

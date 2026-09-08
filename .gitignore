@@ -1,9 +1,12 @@
 # Local diagnostics / generated output
 ZeroStart_v1.2_Diagnostic_Result/
 Integrated*_Result/
+FeverGames_v*_Diagnostic_Result/
 *.log
 *.tmp
 *.partial
+scripts/current/downloadIPC_Win7_v1.2.cs
+scripts/current/FeverGames_Install_Root.txt
 
 # Private runtime data - never commit
 PRIVATE_manifest_response.json
