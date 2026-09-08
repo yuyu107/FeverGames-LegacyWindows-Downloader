@@ -14,11 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Update environment docs
-        shell: python
+        shell: bash
         run: |
+          python3 <<'PY'
           from pathlib import Path
 
-          env_doc = r'''# 系统环境要求
+          env_doc = '''# 系统环境要求
 
 FeverGames Legacy Windows Downloader 主要面向 **Windows 7 SP1 x64**。
 
@@ -104,8 +105,8 @@ v1.3.3 的 Release 包已将入口 `.cmd` 统一为无 BOM + CRLF，并保持纯
 ```text
 where powershell
 powershell -NoProfile -Command "$PSVersionTable.PSVersion; [Environment]::Version"
-dir %WINDIR%\Microsoft.NET\Framework\v*\csc.exe
-dir %WINDIR%\Microsoft.NET\Framework64\v*\csc.exe
+dir %WINDIR%\\Microsoft.NET\\Framework\\v*\\csc.exe
+dir %WINDIR%\\Microsoft.NET\\Framework64\\v*\\csc.exe
 ```
 
 同时提供：
@@ -127,78 +128,32 @@ dir %WINDIR%\Microsoft.NET\Framework64\v*\csc.exe
                   return False
               if marker not in text:
                   raise SystemExit(f'marker not found in {path}: {marker}')
-              text = text.replace(marker, marker + block, 1)
-              p.write_text(text, encoding='utf-8')
+              p.write_text(text.replace(marker, marker + block, 1), encoding='utf-8')
               return True
 
-          insert_once('README.md', '## 下载\n', r'''
-> [!IMPORTANT]
-> 如果你的 Windows 7 是深度精简版，且缺少 `powershell.exe` 或 .NET C# 编译器 `csc.exe`，当前安装器无法正常运行。建议使用接近原版的 Windows 7 SP1 x64，或先恢复 PowerShell / .NET Framework 组件。详见：[系统环境要求](docs/ENVIRONMENT.md)。
-
-''')
-
-          insert_once('README_EN.md', '## Download\n', r'''
-> [!IMPORTANT]
-> If your Windows 7 installation is heavily stripped down and does not include `powershell.exe` or a .NET C# compiler (`csc.exe`), the installer cannot run correctly. Use a near-original Windows 7 SP1 x64 environment, or restore PowerShell / .NET Framework first. See: [System environment requirements](docs/ENVIRONMENT.md).
-
-''')
+          insert_once('README.md', '## 下载\n', '''> [!IMPORTANT]\n> 如果你的 Windows 7 是深度精简版，且缺少 `powershell.exe` 或 .NET C# 编译器 `csc.exe`，当前安装器无法正常运行。建议使用接近原版的 Windows 7 SP1 x64，或先恢复 PowerShell / .NET Framework 组件。详见：[系统环境要求](docs/ENVIRONMENT.md)。\n\n''')
+          insert_once('README_EN.md', '## Download\n', '''> [!IMPORTANT]\n> If your Windows 7 installation is heavily stripped down and does not include `powershell.exe` or a .NET C# compiler (`csc.exe`), the installer cannot run correctly. Use a near-original Windows 7 SP1 x64 environment, or restore PowerShell / .NET Framework first. See: [System environment requirements](docs/ENVIRONMENT.md).\n\n''')
 
           p = Path('docs/README.md')
           text = p.read_text(encoding='utf-8-sig')
           line = '- [系统环境要求](ENVIRONMENT.md)\n'
           if line not in text:
-              text = text.replace('- [兼容性记录](COMPATIBILITY.md)\n', '- [兼容性记录](COMPATIBILITY.md)\n' + line, 1)
-              p.write_text(text, encoding='utf-8')
+              p.write_text(text.replace('- [兼容性记录](COMPATIBILITY.md)\n', '- [兼容性记录](COMPATIBILITY.md)\n' + line, 1), encoding='utf-8')
 
           append_blocks = {
-              'docs/COMPATIBILITY.md': r'''
-
-## 系统环境要求
-
-本项目主要面向接近原版的 Windows 7 SP1 x64。深度精简系统如果缺少 `powershell.exe`、.NET Framework / `csc.exe`、UAC、注册表或基础进程查询组件，可能无法运行安装、状态检查、恢复或诊断脚本。
-
-这类失败属于系统环境不完整，不等同于 FeverGames 前端补丁或 `downloadIPC.exe` 替换逻辑失败。详见：[系统环境要求](ENVIRONMENT.md)。
-''',
-              'docs/TECHNICAL.md': r'''
-
-## 8. 安装器运行环境
-
-当前安装器由 `.cmd` 入口调用 PowerShell 脚本完成自动定位、精确字节修补、C# 编译、备份、状态检查和诊断。因此运行环境需要保留 `cmd.exe`、`powershell.exe`、.NET Framework C# 编译器 `csc.exe` 以及基本的注册表 / 文件系统 / 进程查询能力。
-
-v1.3.3 修复的是旧 CLR 对 managed EXE 的验证误判，以及 Release CMD 编码 / 换行问题；它不能替代被深度精简系统删除的 PowerShell 或 .NET 编译器。详见：[系统环境要求](ENVIRONMENT.md)。
-''',
-              'docs/使用说明.txt': r'''
-
-系统环境要求
-------------
-建议使用接近原版的 Windows 7 SP1 x64。
-如果系统是深度精简版，并且缺少 powershell.exe 或 .NET C# 编译器 csc.exe，安装器无法正常运行。
-常见错误包括：
-'powershell.exe' 不是内部或外部命令，也不是可运行的程序或批处理文件。
-No compatible .NET C# compiler was found (2.0/3.5/4.x).
-
-这种情况属于系统环境不完整，不是补丁本体已经损坏。请先恢复 PowerShell / .NET Framework，或换用更完整的 Windows 7 SP1 x64 环境。
-''',
-              'docs/releases/v1.3.3.md': r'''
-
-## 七、系统环境要求
-
-当前安装器需要 Windows 7 SP1 x64 中仍保留 `cmd.exe`、`powershell.exe`、.NET Framework C# 编译器 `csc.exe`、管理员权限，以及 7-Zip 或 Windows 7 可用的 `zstd.exe`。
-
-如果系统是深度精简版，缺少 PowerShell、.NET Framework / `csc.exe`、UAC、注册表或基础进程查询组件，可能无法运行安装、状态检查、恢复或诊断脚本。此类情况属于系统环境不完整，不等同于补丁逻辑失败。
-
-详见：[系统环境要求](../ENVIRONMENT.md)。
-'''
+              'docs/COMPATIBILITY.md': '''\n\n## 系统环境要求\n\n本项目主要面向接近原版的 Windows 7 SP1 x64。深度精简系统如果缺少 `powershell.exe`、.NET Framework / `csc.exe`、UAC、注册表或基础进程查询组件，可能无法运行安装、状态检查、恢复或诊断脚本。\n\n这类失败属于系统环境不完整，不等同于 FeverGames 前端补丁或 `downloadIPC.exe` 替换逻辑失败。详见：[系统环境要求](ENVIRONMENT.md)。\n''',
+              'docs/TECHNICAL.md': '''\n\n## 8. 安装器运行环境\n\n当前安装器由 `.cmd` 入口调用 PowerShell 脚本完成自动定位、精确字节修补、C# 编译、备份、状态检查和诊断。因此运行环境需要保留 `cmd.exe`、`powershell.exe`、.NET Framework C# 编译器 `csc.exe` 以及基本的注册表 / 文件系统 / 进程查询能力。\n\nv1.3.3 修复的是旧 CLR 对 managed EXE 的验证误判，以及 Release CMD 编码 / 换行问题；它不能替代被深度精简系统删除的 PowerShell 或 .NET 编译器。详见：[系统环境要求](ENVIRONMENT.md)。\n''',
+              'docs/使用说明.txt': '''\n\n系统环境要求\n------------\n建议使用接近原版的 Windows 7 SP1 x64。\n如果系统是深度精简版，并且缺少 powershell.exe 或 .NET C# 编译器 csc.exe，安装器无法正常运行。\n常见错误包括：\n'powershell.exe' 不是内部或外部命令，也不是可运行的程序或批处理文件。\nNo compatible .NET C# compiler was found (2.0/3.5/4.x).\n\n这种情况属于系统环境不完整，不是补丁本体已经损坏。请先恢复 PowerShell / .NET Framework，或换用更完整的 Windows 7 SP1 x64 环境。\n''',
+              'docs/releases/v1.3.3.md': '''\n\n## 七、系统环境要求\n\n当前安装器需要 Windows 7 SP1 x64 中仍保留 `cmd.exe`、`powershell.exe`、.NET Framework C# 编译器 `csc.exe`、管理员权限，以及 7-Zip 或 Windows 7 可用的 `zstd.exe`。\n\n如果系统是深度精简版，缺少 PowerShell、.NET Framework / `csc.exe`、UAC、注册表或基础进程查询组件，可能无法运行安装、状态检查、恢复或诊断脚本。此类情况属于系统环境不完整，不等同于补丁逻辑失败。\n\n详见：[系统环境要求](../ENVIRONMENT.md)。\n'''
           }
           for path, block in append_blocks.items():
               p = Path(path)
               text = p.read_text(encoding='utf-8-sig')
               if block.strip() not in text:
-                  text = text.rstrip() + block + '\n'
-                  p.write_text(text, encoding='utf-8')
+                  p.write_text(text.rstrip() + block + '\n', encoding='utf-8')
 
-          # Delete this temporary workflow after applying the docs update.
           Path('.github/workflows/add-env-requirements-docs.yml').unlink()
+          PY
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
