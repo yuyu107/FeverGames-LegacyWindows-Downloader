@@ -1,8 +1,19 @@
 # 更新日志
 
+## v1.3.3
+
+当前建议使用的正式版本。由于 v1.3.2 Release 已删除，v1.3.3 同时包含 v1.3.2 的修复内容和本次新增的 CMD 打包修复。
+
+- 合入 v1.3.2 的 Windows 7 / PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复；
+- `Is-ManagedExe` 继续使用 PE Optional Header + CLR / COM Descriptor 判断，不再依赖当前 PowerShell CLR 加载目标程序集；
+- 修复 v1.3.2 Release ZIP 中 `.cmd` 入口文件 UTF-8 BOM / LF 换行导致 Windows 7 `cmd.exe` 解析错乱的问题；
+- Release ZIP 中所有入口 `.cmd` 改为无 BOM + CRLF，并保持纯 ASCII 命令内容；
+- 修复后已确认此前会出现 `锘緻echo`、`hell.exe`、`ho` 等解析错误的环境可以正常运行入口；
+- 下载核心、layout A/B、5 点精确字节补丁、自定义 FeverGames / 7-Zip 路径、UAC、备份与恢复逻辑保持不变。
+
 ## v1.3.2
 
-v1.3.1 的小型兼容性修复版本。
+历史过渡版本。该 Release 已删除，修复内容已由 v1.3.3 继承。请直接使用 v1.3.3。
 
 - 修复部分较原生 Windows 7 / PowerShell 2.0 环境中，`.NET 4 csc.exe` 已成功生成 `downloadIPC.exe`，但旧 CLR 通过 `AssemblyName.GetAssemblyName()` 验证时发生误判的问题；
 - `Is-ManagedExe` 改为直接读取 PE Optional Header，并检查 CLR / COM Descriptor；
