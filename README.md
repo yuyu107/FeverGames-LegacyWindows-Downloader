@@ -31,7 +31,32 @@ Release ZIP 根目录：
 core\
 ```
 
-直接下载仓库源码时，脚本仍使用英文文件名，例如 `01_Zero_Start_One_Click_Install.cmd`。
+直接下载仓库源码时，根目录只保留几个 CMD 入口；具体 PowerShell 实现在 `scripts/` 中。
+
+## 仓库结构
+
+```text
+/
+├─ 01_Zero_Start_One_Click_Install.cmd
+├─ 02_Check_Status.cmd
+├─ 03_Restore_Official_Original.cmd
+├─ 04_Collect_Diagnostics.cmd
+├─ 05_Clear_Win7_Downloader_Cache_Optional.cmd
+├─ scripts/
+│  ├─ current/          # 当前 v1.3.x 实现
+│  └─ legacy-v1.2/     # 历史 v1.2 脚本
+├─ docs/
+│  ├─ COMPATIBILITY.md
+│  ├─ TECHNICAL.md
+│  └─ releases/         # 历史 Release Notes / SHA-256
+└─ src/                 # downloadIPC C# 打包源码
+```
+
+- [兼容性记录](docs/COMPATIBILITY.md)
+- [技术说明](docs/TECHNICAL.md)
+- [文档索引](docs/README.md)
+
+普通用户优先下载 Release ZIP；`scripts/legacy-v1.2/` 只保留历史追溯和旧版本恢复参考，不是当前推荐入口。
 
 ## v1.3.2 主要修复
 
