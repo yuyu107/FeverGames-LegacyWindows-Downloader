@@ -3,6 +3,7 @@
 当前正式版：**v1.3.3**
 
 - [兼容性记录](COMPATIBILITY.md)
+- [系统环境要求](ENVIRONMENT.md)
 - [技术说明](TECHNICAL.md)
 - [源码包使用说明](使用说明.txt)
 - [v1.3.3 Release Notes](releases/v1.3.3.md)
@@ -12,3 +13,5 @@
 `releases/` 保存各版本 Release Notes 与校验值，仓库根目录不再堆放历史发布文件。
 
 v1.3.2 Release 已删除，其修复内容已由 v1.3.3 继承；普通用户请直接下载 v1.3.3。
+
+如果 Windows 7 是深度精简版，请先查看 [系统环境要求](ENVIRONMENT.md)。缺少 `powershell.exe` 或 .NET C# 编译器 `csc.exe` 时，安装器无法正常运行。
