@@ -1,28 +1,16 @@
-# FeverGames Legacy Windows Downloader v1.3.1
+# FeverGames Legacy Windows Downloader v1.3.2
 
 A community compatibility project that restores the newer FeverGames download backend on **Windows 7 SP1 x64**.
 
-v1.3.1 is a stability and compatibility update over v1.3.0. It keeps the already end-to-end verified v1.2 .NET download core and does not merge the experimental parallel, pipelined, or DLL-based Zstd redesign.
-
-## Highlights
-
-- Windows 7 SP1 x64 end-to-end download verified.
-- FeverGames 1.18.42.12 verified.
-- FeverGames 1.18.42.14 now supports multiple known binary layouts, including the newly added **layout B** profile.
-- Profile selection for same-version layouts requires all five target locations to match exactly; the patcher does not trust the folder version alone.
-- Custom FeverGames installation paths are supported through saved paths, uninstall information, shortcuts, common folders, and manual drag-and-drop fallback.
-- Custom 7-Zip installation paths are supported through Program Files, registry, PATH, and saved decoder paths.
-- UAC flow fixed so the launcher waits for the elevated install process to finish before status verification.
-- Windows 7 / PowerShell 2.0 custom path persistence fixed.
-- Automatic backup, status check, restore, and privacy-safe diagnostics remain available.
+v1.3.2 is a small compatibility fix over v1.3.1. It keeps the already end-to-end verified v1.2 .NET download core, the five exact-byte frontend patch points, layout A/B handling, custom-path detection, backup/restore, and UAC flow unchanged.
 
 ## Download
 
-Current stable release: **v1.3.1**
+Current stable release: **v1.3.2**
 
-https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.1
+https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.2
 
-The Release ZIP uses simplified Chinese entry names:
+Release ZIP:
 
 ```text
 01_一键安装.cmd
@@ -33,21 +21,30 @@ The Release ZIP uses simplified Chinese entry names:
 core\
 ```
 
-The source repository keeps the original English script names such as `01_Zero_Start_One_Click_Install.cmd`.
+## v1.3.2 fix
 
-## Verified v1.3.1 configuration
+On some relatively stock Windows 7 / PowerShell 2.0 systems, v1.3.1 could successfully invoke the .NET 4 C# compiler and create the replacement downloader, but then stop with:
 
-The following configuration has been verified on Windows 7 SP1 x64:
+```text
+Compiled downloader did not validate as a managed .NET executable.
+```
 
+The issue was the validation method rather than the frontend patch or the C# compilation itself. v1.3.1 asked the current PowerShell CLR to load/identify the newly compiled assembly. An older CLR can fail that operation even when the file itself is a valid newer managed executable.
+
+v1.3.2 now validates managed executables by reading the PE Optional Header and checking the **CLR / COM Descriptor** directly. The installer and status checker use the same CLR-independent logic. Invalid PE/CLR output still fails safely before replacement, and failed validation prints the generated file size and SHA-256 for diagnostics.
+
+This fix was re-tested on a Windows 7 machine where v1.3.1 consistently failed at managed-EXE validation; the corrected build completed installation successfully.
+
+## Verified configurations
+
+- Windows 7 SP1 x64
+- FeverGames `1.18.42.12`
+- FeverGames `1.18.42.14 / layout A`
 - FeverGames `1.18.42.14 / layout B`
-- FeverGames custom root: `D:\FeverGames`
-- 7-Zip custom root: `D:\7-Zip`
-- Frontend patch: `5/5`
-- Managed Win7 `downloadIPC.exe` replacement installed
-- Rollback backup complete
-- Minecraft Bedrock interoperability edition downloaded completely
-- Game launched successfully
-- Successfully entered a world
+- Custom FeverGames root `D:\FeverGames`
+- Custom 7-Zip root `D:\7-Zip`
+- PowerShell 2.0 / older-CLR managed EXE validation path fixed in v1.3.2
+- Minecraft Bedrock interoperability edition fully downloaded, launched, and entered a world
 
 Original `FeverGamesInstaller.exe` SHA256 for `1.18.42.14 / layout B`:
 
@@ -58,38 +55,23 @@ Original `FeverGamesInstaller.exe` SHA256 for `1.18.42.14 / layout B`:
 ## Quick start
 
 1. Install/update FeverGames normally and fully exit it.
-2. Install a `.zst`-capable 7-Zip, or place a Windows 7 compatible `zstd.exe` in `tools\zstd.exe`.
-3. For the v1.3.1 Release ZIP, run:
-
-```text
-01_一键安装.cmd
-```
-
-For a source checkout, run:
-
-```text
-01_Zero_Start_One_Click_Install.cmd
-```
-
-If automatic FeverGames discovery fails, the installer can accept a dragged FeverGames root folder, numeric version folder, or `FeverGamesInstaller.exe`.
+2. Install a `.zst`-capable 7-Zip, or provide a Windows 7 compatible `zstd.exe`.
+3. Run `01_一键安装.cmd` from the Release ZIP, or `01_Zero_Start_One_Click_Install.cmd` from a source checkout.
 
 A ready installation should include:
 
 ```text
-Patch profile: 1.18.42.14 / layout B
 Frontend patch count: 5/5
 downloadIPC.exe = managed Win7 replacement
 rollback backup = COMPLETE
 RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 ```
 
-## Known performance behavior
+## Performance and scope
 
-v1.3.1 prioritizes compatibility and correctness. The replacement .NET downloader can be slower than the official downloader on Windows 8.1, particularly during large-file local reconstruction/MD5 and the final stage with many tiny chunks/files. A temporary 0 B/s display can represent local build/verification rather than a network failure.
+v1.3.2 still prioritizes correctness and compatibility. Large-file local reconstruction/MD5 and the final stage with many tiny chunks/files can be slower than the official Windows 8.1 downloader and may temporarily show 0 B/s.
 
-Experimental DLL-based Zstd, parallel, and pipelined downloader changes are intentionally not included in v1.3.1.
-
-## Privacy and scope
+Experimental DLL-based Zstd, parallel, and pipelined downloader changes are intentionally not included in v1.3.2.
 
 This project does not bypass account login or content entitlement and does not distribute game content. Do not publish PRIVATE Manifest responses, AES keys, tokens/cookies, device identifiers, signatures, security keys, proprietary FeverGames executables, or game files.
 
