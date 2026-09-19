@@ -1,89 +1,168 @@
 # 技术说明
 
-## 1. Windows 7 上的原版 downloadIPC 问题
+## 项目结构
 
-实机与静态分析确认，发烧游戏新下载后端使用 Go 1.23.x `downloadIPC.exe`。在 Windows 7 上，程序会进入 Go runtime 的随机数初始化路径，并动态解析 `bcryptprimitives.dll!ProcessPrng`；该路径在 Windows 7 上不可用，因此项目使用 Windows 7 可运行的 .NET 替代 downloader。
+FeverGames Legacy Windows Downloader 由两部分组成：
 
-## 2. 两层兼容方案
+1. 对已知 `FeverGamesInstaller.exe` 布局进行 5 点 exact-byte 兼容补丁；
+2. 用 Windows 7 可运行的托管 `downloadIPC.exe` 替代官方下载后端。
 
-1. 对 `FeverGamesInstaller.exe` 做严格、精确字节校验后的前端兼容修补；
-2. 用 Windows 7 可运行的 .NET downloader 替换原版 Go downloader。
+当前正式版：**v1.3.5**。
 
-游戏内容版本不写死，仍从发烧游戏启动参数读取动态 `targetVersion`。
+## 前端补丁
 
-## 3. 当前 v1.3.4 安装兼容状态
+安装器不会只根据版本目录名称直接写入固定偏移。
 
-v1.3.4 是当前建议使用的正式版本。它在以下两类安装兼容修复基础上，新增 FeverGames `1.18.43.22 / layout A` 的 exact-byte profile：
+每个已知 profile 都包含 5 个目标位置：
 
-1. v1.3.2 的 managed EXE 验证修复；
-2. v1.3.3 的 Release CMD 编码 / 换行修复。
+- Gate A
+- Gate B
+- `download_check` OS label
+- `download_check` minor
+- `downloadIPC --sysVer` getter
 
-### 3.1 managed EXE 验证修复
+每个目标位置都保存：
 
-v1.3.1 原先使用：
+- offset；
+- original bytes；
+- patched bytes；
+- 必要时的 alternate-before bytes。
 
-```powershell
-[Reflection.AssemblyName]::GetAssemblyName($Path)
-```
+只有一个 profile 的 5 个位置全部处于已知状态时才会继续。未知布局会安全停止。
 
-判断编译出的 `downloadIPC.exe` 是否为托管程序。部分 Windows 7 / PowerShell 2.0 环境中的当前 PowerShell CLR 较旧，而脚本可能选择 .NET Framework 4.0 的 `csc.exe`。此时编译器已经成功生成文件，但旧 CLR 不一定能通过上述方式加载或识别目标程序集，于是会产生验证误判。
+## downloader 架构
 
-当前 `Is-ManagedExe` 不再加载程序集，而是直接读取 PE：
+替代 downloader 是 C# / .NET 托管程序。
 
-```text
-MZ header
-  -> PE signature
-  -> Optional Header (PE32 / PE32+)
-  -> Data Directory #14
-  -> CLR / COM Descriptor RVA + Size
-```
-
-只有 CLR / COM Descriptor 同时存在有效 RVA 与 Size 才判定为托管 EXE。安装脚本和状态检查脚本共享这一判断思路，因此不依赖当前 PowerShell CLR 能否加载目标程序集，同时仍能在正式覆盖前拒绝明显无效的编译输出。
-
-### 3.2 Release CMD 编码 / 换行修复
-
-v1.3.2 Release ZIP 曾出现 `.cmd` 入口在 Windows 7 `cmd.exe` 下被错误解析的问题，典型表现包括：
+源码仓库保存 gzip + Base64 形式的完整 C# 源：
 
 ```text
-锘緻echo off
-powershell.exe -> hell.exe
-echo -> ho
-goto -> to
-setlocal -> al
+src/downloadIPC_Win7_v1.2.cs.gz.b64
 ```
 
-v1.3.3 Release ZIP 中所有入口 `.cmd` 均改为无 BOM + CRLF，并保持纯 ASCII 命令内容。中文文件名继续保留，例如 `01_一键安装.cmd`。
-
-## 4. 已知前端补丁布局
-
-已知平台 build 使用 5 个修补点：Gate A、Gate B、`download_check` OS label、`download_check` minor、`downloadIPC --sysVer` getter。具体偏移与字节定义见 `FeverGames_PatchProfiles_v1.3.ps1`。
-
-已知布局包括 `1.18.42.12 / layout A`、`1.18.42.14 / layout A`、`1.18.42.14 / layout B`、`1.18.43.22 / layout A`。同一个版本目录可能对应不同二进制布局，因此始终要求全部 5 个目标位置精确匹配，不能只信目录版本号。
-
-`1.18.43.22 / layout A` 的 5 个位置已重新定位并通过 Windows 7 实机验证；原版 `FeverGamesInstaller.exe` SHA-256 为 `d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27`。
-
-## 5. 替代 downloader 数据链
+`scripts/current/Prepare_Source_v1.2.ps1` 会在源码 checkout 中还原：
 
 ```text
-FeverGames
-  -> ZMTP 3.x PUB/SUB
-  -> Manifest API
-  -> target_manifest.bin
-  -> encrypted .index
-  -> AES-CTR
-  -> Zstd
-  -> protobuf SumHead
-  -> SumChunk + SumBuf
-  -> CDN chunks
-  -> file reconstruction
-  -> MD5 verification
-  -> progress / completion state
+scripts/current/downloadIPC_Win7_v1.2.cs
 ```
 
-## 6. 性能边界
+随后使用目标 Win7 系统已有的 `csc.exe` 编译为 x64 managed EXE。
 
-当前稳定 downloader 采用已完整验证的串行实现。大文件网络 chunk 下载完成后会进行本地 SumBuf 重组与整文件 MD5；尾部大量极小 chunk / 小文件使用外部 `7z.exe` 时也可能较慢。v1.3.4 不包含未经完整回归验证的 DLL 直解 Zstd、并发或流水线重写。
+## 下载流程
 
-## 7. 安全边界
+当前稳定路径大致为：
 
-本项目不实现账号登录绕过、不绕过内容授权、不要求账号密码、不分发游戏文件，也不在公开诊断中保存 PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感数据。
+```text
+FeverGames task
+  -> Manifest
+  -> Index HTTP
+  -> Index decrypt
+  -> Index Zstd decode
+  -> parse Chunk metadata
+  -> Chunk HTTP
+  -> Chunk decrypt
+  -> Chunk Zstd decode
+  -> SumBuf / file reconstruction
+  -> MD5
+  -> final file
+```
+
+## v1.3.5：进程内 libzstd
+
+v1.3.4 及更早版本的稳定 downloader 使用外部 `7z.exe` / `zstd.exe` 完成 Zstandard 解压。
+
+v1.3.5 改为：
+
+```text
+managed downloadIPC.exe
+  -> P/Invoke
+  -> libzstd.dll 1.5.6
+  -> ZSTD_createDStream
+  -> ZSTD_initDStream
+  -> ZSTD_decompressStream
+```
+
+使用到的主要导出包括：
+
+- `ZSTD_versionString`
+- `ZSTD_createDStream`
+- `ZSTD_freeDStream`
+- `ZSTD_initDStream`
+- `ZSTD_decompressStream`
+- `ZSTD_DStreamInSize`
+- `ZSTD_DStreamOutSize`
+- `ZSTD_isError`
+- `ZSTD_getErrorName`
+
+Windows 7 SP1 x64 + CLR 2.0 的独立流式解压测试已经通过，随后在实际 FeverGames 下载中验证完成。
+
+## 为什么正式版没有采用 Test2 / Test3 / Test4 的并发参数？
+
+性能测试发现，大量小文件时，主要等待可以来自串行的 Index HTTP + Chunk HTTP 往返；文件级并行能显著改善特定游戏。
+
+大文件内部 Chunk 并行也能改善部分大文件，但不同游戏会有不同的：
+
+- 文件数量；
+- 文件大小分布；
+- Chunk 数量与大小；
+- Chunk 共享关系；
+- CDN / 下载节点；
+- 磁盘性能。
+
+因此把某一个游戏上效果较好的固定 `4 / 6 worker` 参数直接作为全局策略并不稳妥。
+
+v1.3.5 正式版只吸收“取消外部 7-Zip 依赖”的通用改进，下载调度保持已验证的串行实现。
+
+## 状态检查
+
+状态检查要求：
+
+1. 5 个前端位置全部为 PATCHED；
+2. `downloadIPC.exe` 是 managed Win7 replacement；
+3. rollback backup 完整；
+4. 当前 FeverGames 版本目录中存在 `libzstd.dll`。
+
+正常结果：
+
+```text
+Frontend patch count: 5/5
+downloadIPC.exe = managed Win7 replacement
+decoder = libzstd.dll ... (in-process)
+rollback backup = COMPLETE
+RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
+```
+
+## 回滚
+
+安装前会保存官方：
+
+```text
+FeverGamesInstaller.exe.original
+downloadIPC.exe.original
+```
+
+如果安装器从工具包复制了 `libzstd.dll`，会额外记录：
+
+```text
+copied_libzstd.sha256
+```
+
+恢复时只有当前 DLL SHA-256 与记录一致才会删除该 DLL；用户后来替换过的 DLL 会被保留。
+
+## 诊断
+
+v1.3.5 诊断结果新增：
+
+```text
+decoder_info.txt
+```
+
+其中记录目标版本目录中的 `libzstd.dll` 路径、版本和 SHA-256。
+
+诊断不会主动收集 PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感鉴权数据。
+
+## 第三方组件
+
+正式 Release ZIP 包含 Zstandard 1.5.6 的 `libzstd.dll`，按 BSD License 条款再分发。
+
+见：[第三方组件说明](THIRD_PARTY_NOTICES.md)。
