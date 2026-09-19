@@ -66,9 +66,9 @@ echo -> ho
 goto -> to
 ```
 
-这是旧 Release 包 `.cmd` 入口文件编码 / 换行不兼容 Windows 7 `cmd.exe` 的表现。请删除旧解压目录，重新下载 v1.3.3 或更新版本。
+这是旧 Release 包 `.cmd` 入口文件编码 / 换行不兼容 Windows 7 `cmd.exe` 的表现。请删除旧解压目录，重新下载 v1.3.4 或更新版本。
 
-v1.3.3 的 Release 包已将入口 `.cmd` 统一为无 BOM + CRLF，并保持纯 ASCII 命令内容。
+v1.3.4 继续保持入口 `.cmd` 统一为无 BOM + CRLF，并保持纯 ASCII 命令内容。
 
 ## 不建议的处理方式
 
