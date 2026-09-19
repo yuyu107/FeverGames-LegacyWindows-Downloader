@@ -14,7 +14,7 @@
 
 ## v1.3.3
 
-当前建议使用的正式版本。由于 v1.3.2 Release 已删除，v1.3.3 同时包含 v1.3.2 的修复内容和本次新增的 CMD 打包修复。
+上一正式版本。由于 v1.3.2 Release 已删除，v1.3.3 同时包含 v1.3.2 的修复内容和当时新增的 CMD 打包修复。
 
 - 合入 v1.3.2 的 Windows 7 / PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复；
 - `Is-ManagedExe` 继续使用 PE Optional Header + CLR / COM Descriptor 判断，不再依赖当前 PowerShell CLR 加载目标程序集；
@@ -25,7 +25,7 @@
 
 ## v1.3.2
 
-历史过渡版本。该 Release 已删除，修复内容已由 v1.3.3 继承。请直接使用 v1.3.3。
+历史过渡版本。该 Release 已删除，修复内容已由后续版本继承。请直接使用当前正式版。
 
 - 修复部分较原生 Windows 7 / PowerShell 2.0 环境中，`.NET 4 csc.exe` 已成功生成 `downloadIPC.exe`，但旧 CLR 通过 `AssemblyName.GetAssemblyName()` 验证时发生误判的问题；
 - `Is-ManagedExe` 改为直接读取 PE Optional Header，并检查 CLR / COM Descriptor；
