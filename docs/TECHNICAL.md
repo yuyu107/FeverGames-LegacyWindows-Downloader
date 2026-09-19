@@ -11,9 +11,9 @@
 
 游戏内容版本不写死，仍从发烧游戏启动参数读取动态 `targetVersion`。
 
-## 3. 当前 v1.3.3 安装兼容修复
+## 3. 当前 v1.3.4 安装兼容状态
 
-v1.3.3 是当前建议使用的正式版本。它包含两类安装兼容修复：
+v1.3.4 是当前建议使用的正式版本。它在以下两类安装兼容修复基础上，新增 FeverGames `1.18.43.22 / layout A` 的 exact-byte profile：
 
 1. v1.3.2 的 managed EXE 验证修复；
 2. v1.3.3 的 Release CMD 编码 / 换行修复。
@@ -58,7 +58,9 @@ v1.3.3 Release ZIP 中所有入口 `.cmd` 均改为无 BOM + CRLF，并保持纯
 
 已知平台 build 使用 5 个修补点：Gate A、Gate B、`download_check` OS label、`download_check` minor、`downloadIPC --sysVer` getter。具体偏移与字节定义见 `FeverGames_PatchProfiles_v1.3.ps1`。
 
-同一个 `1.18.42.14` 文件夹版本可能对应 layout A / layout B；同版本存在多个候选时要求全部 5 个目标位置精确匹配，不能只信目录版本号。
+已知布局包括 `1.18.42.12 / layout A`、`1.18.42.14 / layout A`、`1.18.42.14 / layout B`、`1.18.43.22 / layout A`。同一个版本目录可能对应不同二进制布局，因此始终要求全部 5 个目标位置精确匹配，不能只信目录版本号。
+
+`1.18.43.22 / layout A` 的 5 个位置已重新定位并通过 Windows 7 实机验证；原版 `FeverGamesInstaller.exe` SHA-256 为 `d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27`。
 
 ## 5. 替代 downloader 数据链
 
@@ -80,7 +82,7 @@ FeverGames
 
 ## 6. 性能边界
 
-当前稳定 downloader 采用已完整验证的串行实现。大文件网络 chunk 下载完成后会进行本地 SumBuf 重组与整文件 MD5；尾部大量极小 chunk / 小文件使用外部 `7z.exe` 时也可能较慢。v1.3.3 不包含未经完整回归验证的 DLL 直解 Zstd、并发或流水线重写。
+当前稳定 downloader 采用已完整验证的串行实现。大文件网络 chunk 下载完成后会进行本地 SumBuf 重组与整文件 MD5；尾部大量极小 chunk / 小文件使用外部 `7z.exe` 时也可能较慢。v1.3.4 不包含未经完整回归验证的 DLL 直解 Zstd、并发或流水线重写。
 
 ## 7. 安全边界
 
