@@ -1,5 +1,27 @@
 # 更新日志
 
+
+## v1.3.5
+
+取消对用户安装 7-Zip 的运行时依赖，改用内置 `libzstd.dll 1.5.6` 进行 Zstandard 解压。
+
+- `downloadIPC.exe` 改为通过 P/Invoke 直接调用 `libzstd.dll`，使用 `ZSTD_decompressStream` 完成流式解压；
+- Windows 7 SP1 x64 + CLR 2.0 实机完成独立 libzstd P/Invoke 流式解压验证；
+- 实际 FeverGames 游戏下载验证完成，确认可完全不使用 7-Zip；
+- Release ZIP 直接包含 Win7 实机验证过的 x64 `libzstd.dll 1.5.6`；
+- 状态检查现在要求目标版本目录存在 `libzstd.dll`，并显示 in-process decoder 状态；
+- 诊断新增 `decoder_info.txt`，记录 libzstd 版本与 SHA-256；
+- 恢复官方文件时，根据安装时记录的 SHA-256 判断是否删除工具复制的 `libzstd.dll`，文件被用户修改后不会误删；
+- Release CMD 入口增加“必须先完整解压 ZIP”的明确检测；
+- Test2 / Test3 / Test4 曾验证文件级和 Chunk 级并发可以改善特定游戏的下载耗时，但由于不同游戏 Manifest / Chunk 分布差异较大，这些实验并发参数不纳入 v1.3.5 正式版；
+- 继续支持并保留 1.18.42.12-A、1.18.42.14-A/B、1.18.43.22-A 的 5 点 exact-byte profile 与全部既有安全检查。
+
+正式包 SHA-256：
+
+```text
+855ff496b9cb962952ffb52d61a2386fa18ff2644d78b8ace359149cbdff4dc9
+```
+
 ## v1.3.4
 
 新增 FeverGames `1.18.43.22 / layout A` 正式支持。
