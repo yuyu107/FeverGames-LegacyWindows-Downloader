@@ -6,7 +6,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 try {
     Write-Host "============================================================"
-    Write-Host " FeverGames Legacy Windows Downloader v1.3.3"
+    Write-Host " FeverGames Legacy Windows Downloader v1.3.4"
     Write-Host " Rolling version-folder selector"
     Write-Host "============================================================"
     Write-Host ""
@@ -37,7 +37,7 @@ try {
     Write-Host ("[OK] Targeting newest complete version: " + $target.Name)
     Write-Host ("[OK] Path: " + $target.Path)
 
-    Write-Host "[INFO] Known frontend profiles: 1.18.42.12 layout A; 1.18.42.14 layouts A/B."
+    Write-Host "[INFO] Known frontend profiles: 1.18.42.12 layout A; 1.18.42.14 layouts A/B; 1.18.43.22 layout A."
     Write-Host "[INFO] Folder version alone is not trusted; all 5 exact target bytes must match one layout."
     Write-Host ""
 
