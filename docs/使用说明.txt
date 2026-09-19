@@ -1,27 +1,70 @@
-FeverGames Legacy Windows Downloader v1.3.4
-============================================================
+发烧游戏旧版 Windows 下载器 v1.3.5
 
 用途
 ----
-用于恢复发烧游戏（FeverGames）新版下载后端在 Windows 7 SP1 x64 上的运行能力。
-本工具解决的是发烧游戏“下载流程兼容”，不是保证所有下载下来的游戏本体都能在 Windows 7 上运行。
+让 Windows 7 SP1 x64 上的发烧游戏平台旧环境继续使用新版游戏下载服务。
 
-v1.3.4 主要更新
+v1.3.5 的主要变化
+------------------
+替代 downloadIPC.exe 现在通过 P/Invoke 直接调用 libzstd.dll 1.5.6：
+
+downloadIPC.exe -> libzstd.dll -> ZSTD_decompressStream
+
+Release ZIP 已自带 libzstd.dll，因此普通用户不再需要安装 7-Zip 或另外准备 zstd.exe。
+
+支持的已验证布局
 ----------------
-1. 新增 FeverGames 1.18.43.22 / layout A 精确字节支持。
-2. Windows 7 实机已完成完整验证：补丁安装成功、游戏完整下载成功，并在下载完成后成功进入游戏。
-3. 继续要求 5 个目标位置全部精确匹配；未知或发生变化的布局会安全停止，不会仅按版本文件夹名称强行套用旧补丁。
-4. 保留 v1.3.3 的 Release CMD 无 BOM + CRLF 修复。
-5. 保留 v1.3.2 的 PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复。
-6. 下载核心继续沿用已完成端到端验证的 v1.2 .NET 实现。
-
-已验证前端布局：
 - 1.18.42.12 / layout A
 - 1.18.42.14 / layout A
 - 1.18.42.14 / layout B
 - 1.18.43.22 / layout A
 
-Release 包运行 01_一键安装.cmd；源码仓库运行 01_Zero_Start_One_Click_Install.cmd。
-正常状态应包含 Frontend patch count: 5/5、downloadIPC.exe = managed Win7 replacement、rollback backup = COMPLETE、RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD。
+其中 1.18.43.22 / layout A 已在 Windows 7 SP1 x64 实机完成补丁安装、完整游戏下载并成功进入游戏。
 
-版本：v1.3.4
+使用方法
+--------
+1. 完整解压 Release ZIP，不要直接在 ZIP 压缩包里双击 CMD。
+2. 正常安装或更新 FeverGames。
+3. 完全退出 FeverGames。
+4. 运行：01_一键安装.cmd
+5. 安装完成后运行：02_检查状态.cmd
+
+正常状态应包含：
+
+Frontend patch count: 5/5
+downloadIPC.exe = managed Win7 replacement
+decoder = libzstd.dll ... (in-process)
+rollback backup = COMPLETE
+RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
+
+恢复官方文件
+------------
+运行：
+
+03_恢复官方文件.cmd
+
+会恢复备份中的官方 FeverGamesInstaller.exe 与 downloadIPC.exe。
+
+如果 libzstd.dll 是本工具复制进去的，并且安装后没有发生变化，恢复脚本会根据记录的 SHA-256 一并删除；如果 DLL 已被修改，则会保留。
+
+收集诊断
+--------
+运行：
+
+04_收集诊断.cmd
+
+诊断结果会包含 status.txt、backup_info.txt、install_marker.txt（存在时）、downloadIPC_v1.2.log（存在时）以及 decoder_info.txt。
+
+源码 checkout
+-------------
+源码仓库不直接存放第三方 libzstd.dll 二进制。
+
+如果从源码 checkout 运行，需要把官方 Zstandard v1.5.6 x64 的 libzstd.dll 放到：
+
+tools\libzstd.dll
+
+普通用户应直接使用 Release ZIP。
+
+注意
+----
+本项目只解决 FeverGames 下载流程兼容，不保证下载后的游戏本体一定支持 Windows 7。
