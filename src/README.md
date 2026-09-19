@@ -1,8 +1,8 @@
 # downloadIPC v1.2 source
 
-由于当前发布流程不直接提交生成后的 `downloadIPC.exe` 二进制，Win7 替代 downloader 会在目标机器上使用系统已有的 C# 编译器生成。
+当前稳定 Release 仍在目标 Windows 7 机器上使用系统已有的 C# 编译器生成托管 `downloadIPC.exe`，仓库不直接提交预编译 downloader 二进制。
 
-仓库中的完整 C# 源码以 gzip + Base64 文本形式保存为：
+完整 C# 源码以 gzip + Base64 文本形式保存：
 
 ```text
 src/downloadIPC_Win7_v1.2.cs.gz.b64
@@ -14,18 +14,40 @@ src/downloadIPC_Win7_v1.2.cs.gz.b64
 01_Zero_Start_One_Click_Install.cmd
 ```
 
-会先自动调用：
+会先调用：
 
 ```text
 scripts/current/Prepare_Source_v1.2.ps1
 ```
 
-并在当前脚本目录还原出：
+并在：
 
 ```text
 scripts/current/downloadIPC_Win7_v1.2.cs
 ```
 
-随后当前 v1.3.x 安装脚本会直接使用该源码进行编译，因此普通使用者无需手动解包或移动 C# 源码。
+还原出完整源码，然后由当前 v1.3.x 安装脚本编译。
 
-这样做只用于保持仓库内容为可审阅的文本并避免提交预编译 downloader；还原后的源码与当前稳定下载核心使用的源码一致。
+## v1.3.5 Zstandard 后端
+
+当前打包源码与 v1.3.5 正式 Release 使用的托管 downloader 逻辑一致，Zstandard 解压已经改为通过 P/Invoke 调用：
+
+```text
+libzstd.dll 1.5.6
+```
+
+主要使用 `ZSTD_decompressStream` 流式接口，不再把 7-Zip 作为正式运行时依赖。
+
+## 从源码 checkout 运行
+
+GitHub 源码仓库不提交第三方 `libzstd.dll` 二进制。
+
+如果直接从源码运行，请从 Zstandard 官方 v1.5.6 Windows x64 Release 获取 `libzstd.dll`，放到：
+
+```text
+tools\libzstd.dll
+```
+
+然后再运行根目录的一键安装入口。
+
+普通用户应优先使用 GitHub Release ZIP；正式 v1.3.5 Release 已经内置经过 Windows 7 实机验证的 `libzstd.dll`。
