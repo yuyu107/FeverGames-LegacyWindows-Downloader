@@ -6,7 +6,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 try {
     Write-Host "============================================================"
-    Write-Host " FeverGames Legacy Windows Downloader v1.3.4"
+    Write-Host " FeverGames Legacy Windows Downloader v1.3.5"
     Write-Host " Rolling version-folder selector"
     Write-Host "============================================================"
     Write-Host ""
