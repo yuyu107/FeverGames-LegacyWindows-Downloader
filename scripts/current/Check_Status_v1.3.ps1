@@ -165,7 +165,7 @@ function Find-InstalledDecoder([string]$Dir) {
 
 try {
     Write-Host "============================================================"
-    Write-Host " FeverGames Legacy Windows Downloader v1.3.4 - Status"
+    Write-Host " FeverGames Legacy Windows Downloader v1.3.5 - Status"
     Write-Host "============================================================"
 
     if ([String]::IsNullOrEmpty($InstallDir)) { throw "InstallDir is required." }
@@ -263,13 +263,21 @@ try {
     if (-not $backupOk) { Warn "rollback backup = INCOMPLETE / MISSING" }
 
     $decoderOk = $false
-    $decoderPath = Find-InstalledDecoder $InstallDir
+    $decoderPath = Join-Path $InstallDir "libzstd.dll"
 
-    if (-not [String]::IsNullOrEmpty($decoderPath)) {
-        Ok ("decoder = " + $decoderPath)
+    if (Test-Path $decoderPath -PathType Leaf) {
+        try {
+            $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($decoderPath)
+            $ver = $vi.FileVersion
+            if ([String]::IsNullOrEmpty($ver)) { $ver = "unknown" }
+            Ok ("decoder = libzstd.dll " + $ver + " (in-process)")
+        }
+        catch {
+            Ok "decoder = libzstd.dll (in-process)"
+        }
         $decoderOk = $true
     } else {
-        Warn "No zstd.exe / 7z.exe detected (including custom 7-Zip registry path and PATH)."
+        Warn "Bundled libzstd.dll is missing from the FeverGames version directory."
     }
 
     Write-Host ""
