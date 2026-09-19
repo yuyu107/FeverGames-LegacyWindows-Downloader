@@ -2,7 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 $ThisScript = $MyInvocation.MyCommand.Definition
-$PackageVersion = "1.3.4"
+$PackageVersion = "1.3.5"
 
 function Info($s){ Write-Host "[INFO] $s" }
 function Ok($s){ Write-Host "[OK]   $s" }
@@ -220,7 +220,29 @@ function Find-CommandPath([string]$Name) {
 }
 
 function Find-Decoder([string]$Dir,[string]$ScriptDir) {
-    # 1) zstd: local package / installed beside downloader / PATH
+    # v1.3.5 priority: in-process libzstd.dll.
+    # Source checkout layout: scripts\current -> repository root -> tools.
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+
+    foreach ($p in @(
+        (Join-Path $Dir "libzstd.dll"),
+        (Join-Path $ScriptDir "libzstd.dll"),
+        (Join-Path $ScriptDir "tools\libzstd.dll"),
+        (Join-Path $repoRoot "tools\libzstd.dll"),
+        (Join-Path $repoRoot "libzstd.dll")
+    )) {
+        if (-not [String]::IsNullOrEmpty($p) -and (Test-Path $p)) {
+            $full = (Resolve-Path $p).Path
+            return @{
+                Type="libzstd"
+                Path=$full
+                NeedCopy=($full -ne (Join-Path $Dir "libzstd.dll"))
+                Source="bundled/native-dll"
+            }
+        }
+    }
+
+    # Retain legacy decoder discovery for diagnostics/regression only.
     foreach ($p in @(
         (Join-Path $Dir "zstd.exe"),
         (Join-Path $ScriptDir "zstd.exe"),
@@ -237,7 +259,6 @@ function Find-Decoder([string]$Dir,[string]$ScriptDir) {
         }
     }
 
-    # 2) 7-Zip: an existing config from an earlier installation
     $decoderConfig = Join-Path $Dir "Win7_Downloader_Decoder_Path.txt"
     if (Test-Path $decoderConfig) {
         try {
@@ -253,7 +274,6 @@ function Find-Decoder([string]$Dir,[string]$ScriptDir) {
         } catch {}
     }
 
-    # 3) Standard locations
     $sevenCandidates = New-Object System.Collections.ArrayList
     Add-DecoderCandidate $sevenCandidates (Join-Path $Dir "7z.exe")
     Add-DecoderCandidate $sevenCandidates (Join-Path $ScriptDir "7z.exe")
@@ -266,12 +286,10 @@ function Find-Decoder([string]$Dir,[string]$ScriptDir) {
         Add-DecoderCandidate $sevenCandidates (Join-Path ${env:ProgramFiles(x86)} "7-Zip\7z.exe")
     }
 
-    # 4) Official 7-Zip registry keys. This is the important custom-install-path fix.
     foreach ($rp in @(Get-SevenZipRegistryCandidates)) {
         Add-DecoderCandidate $sevenCandidates $rp
     }
 
-    # 5) PATH
     Add-DecoderCandidate $sevenCandidates (Find-CommandPath "7z.exe")
 
     if ($sevenCandidates.Count -gt 0) {
@@ -455,6 +473,7 @@ $scriptDir = Split-Path -Parent $ThisScript
 $work = $null
 $modified = $false
 $copiedZstd = $false
+$copiedLibZstd = $false
 
 try {
     Write-Host "============================================================"
@@ -491,8 +510,13 @@ try {
 
     $decoder = Find-Decoder $InstallDir $scriptDir
     if ($decoder -eq $null) {
-        throw "No Zstd decoder found. Install 7-Zip, or put standalone zstd.exe in this package's tools folder."
+        throw "v1.3.5 requires libzstd.dll. For a source checkout, place the official x64 libzstd.dll 1.5.6 in the repository tools folder, or use the Release ZIP which already bundles it."
     }
+
+    if ($decoder.Type -ne "libzstd") {
+        throw ("v1.3.5 requires libzstd.dll; refusing external decoder fallback during installation (found " + $decoder.Type + ").")
+    }
+
     Ok ("Decoder: " + $decoder.Type + " -> " + $decoder.Path)
     if ($decoder["Source"] -ne $null) { Info ("Decoder discovery: " + $decoder.Source) }
 
@@ -585,6 +609,14 @@ try {
         Remove-Item $decoderConfig -Force -ErrorAction SilentlyContinue
     }
 
+    if ($decoder.Type -eq "libzstd" -and $decoder.NeedCopy) {
+        $destLibZstd = Join-Path $InstallDir "libzstd.dll"
+        Copy-Item $decoder.Path $destLibZstd -Force
+        (Get-Sha256 $destLibZstd) | Out-File (Join-Path $backupDir "copied_libzstd.sha256") -Encoding ASCII
+        $copiedLibZstd = $true
+        Ok "libzstd.dll copied beside downloadIPC.exe."
+    }
+
     if ($decoder.Type -eq "zstd" -and $decoder.NeedCopy) {
         $destZstd = Join-Path $InstallDir "zstd.exe"
         Copy-Item $decoder.Path $destZstd -Force
@@ -618,7 +650,8 @@ try {
         ("Patch profile: " + $profile.Build),
         "Frontend unlock: OK",
         "download_check Win8.1 compatibility spoof: OK",
-        "downloadIPC: managed Win7 replacement core v1.2",
+        "downloadIPC: managed Win7 replacement core v1.2 + in-process libzstd",
+        "Zstd backend: libzstd.dll (in-process)",
         ("Backup: " + $backupDir)
     ) | Out-File -FilePath $marker -Encoding UTF8
 
@@ -630,6 +663,16 @@ try {
 catch {
     Write-Host ""
     Err $_.Exception.Message
+
+    if ($copiedLibZstd) {
+        try {
+            $destLibZstd = Join-Path $InstallDir "libzstd.dll"
+            if (Test-Path $destLibZstd) {
+                Remove-Item $destLibZstd -Force
+                Info "Patch-supplied libzstd.dll copy removed after failed install."
+            }
+        } catch {}
+    }
 
     if ($modified) {
         Warn "Install failed after live files were changed. Rolling back..."
