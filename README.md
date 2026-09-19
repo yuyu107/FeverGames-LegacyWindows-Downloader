@@ -1,15 +1,14 @@
-# 发烧游戏旧版 Windows 下载器 v1.3.3
+# 发烧游戏旧版 Windows 下载器 v1.3.4
 
 英文项目名：**FeverGames Legacy Windows Downloader**
 
 用于恢复 **发烧游戏（FeverGames）新版下载后端在 Windows 7 SP1 x64 上的运行能力**。
 
-v1.3.3 是当前建议使用的正式版本。由于 v1.3.2 Release 已删除，本版本同时包含：
+v1.3.4 是当前建议使用的正式版本。本版本在 v1.3.3 的 Windows 7 安装兼容修复基础上，新增 **FeverGames 1.18.43.22 / layout A** 的精确字节支持。
 
-1. **v1.3.2 的 PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复**；
-2. **v1.3.3 的 Release CMD 编码 / 换行修复**。
+`1.18.43.22 / layout A` 已在 Windows 7 实机完成完整验证：补丁成功安装、游戏下载完成，并在下载完成后成功进入游戏。
 
-本版本继续沿用已经完成端到端验证的 v1.2 .NET 下载核心，不修改 5 点前端补丁逻辑，也不合入实验性的并发、流水线或 DLL 直解 Zstd 重构。
+本版本继续沿用已经完成端到端验证的 v1.2 .NET 下载核心，并保留 v1.3.2 的 PowerShell 2.0 / 旧 CLR 托管 EXE 验证修复及 v1.3.3 的 Release CMD 编码 / 换行修复。
 
 > [!IMPORTANT]
 > 这个项目解决的是 **发烧游戏下载器 / 下载流程兼容**，不是某一个游戏客户端本身的运行兼容。
@@ -21,9 +20,9 @@ v1.3.3 是当前建议使用的正式版本。由于 v1.3.2 Release 已删除，
 
 ## 下载
 
-当前正式版：**v1.3.3**
+当前正式版：**v1.3.4**
 
-- [前往 GitHub Releases 下载 v1.3.3](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.3)
+- [前往 GitHub Releases 下载 v1.3.3](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.4)
 
 Release ZIP 根目录：
 
@@ -60,13 +59,32 @@ core\
 - [兼容性记录](docs/COMPATIBILITY.md)
 - [技术说明](docs/TECHNICAL.md)
 - [文档索引](docs/README.md)
-- [v1.3.3 Release Notes](docs/releases/v1.3.3.md)
+- [v1.3.4 Release Notes](docs/releases/v1.3.4.md)
 
 普通用户优先下载 Release ZIP；`scripts/legacy-v1.2/` 只保留历史追溯和旧版本恢复参考，不是当前推荐入口。
 
-## v1.3.3 整合修复
+## v1.3.4 新增支持
 
-### 1. 合入 v1.3.2 的 managed EXE 验证修复
+### FeverGames 1.18.43.22 / layout A
+
+v1.3.4 新增对 `FeverGames 1.18.43.22 / layout A` 的 exact-byte profile。新版前端重新定位了 Gate A、Gate B、`download_check` OS label / minor 以及 `downloadIPC --sysVer` getter，仍要求 5 个目标位置全部匹配后才允许修改。
+
+该布局原版 `FeverGamesInstaller.exe` SHA-256：
+
+```text
+d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27
+```
+
+Windows 7 实机已验证：
+
+- 补丁安装成功；
+- 发烧游戏平台可继续正常下载；
+- 游戏完整下载成功；
+- 下载完成后成功进入游戏。
+
+## v1.3.3 / v1.3.2 保留修复
+
+### 1. v1.3.2 managed EXE 验证修复
 
 部分较原生的 Windows 7 / PowerShell 2.0 环境中，v1.3.1 会在完成 C# 编译后报：
 
@@ -78,7 +96,7 @@ Compiled downloader did not validate as a managed .NET executable.
 
 现在安装脚本和状态检查脚本都改为直接读取 EXE 的 PE Optional Header，并检查 **CLR / COM Descriptor**。这样不再依赖当前 PowerShell CLR 能否加载目标程序集，同时仍保留正式覆盖前的 fail-safe。
 
-### 2. v1.3.3 修复 Release CMD 编码 / 换行
+### 2. v1.3.3 Release CMD 编码 / 换行修复
 
 v1.3.2 Release ZIP 中的 `.cmd` 入口文件在部分 Windows 7 上会被 `cmd.exe` 解析错乱，表现为：
 
@@ -99,6 +117,7 @@ v1.3.3 的 Release 入口 `.cmd` 已统一为 **无 BOM + CRLF**，并保持纯 
 | 发烧游戏 1.18.42.12 | ✅ 已验证 |
 | 发烧游戏 1.18.42.14 / layout A | ✅ 已验证 |
 | 发烧游戏 1.18.42.14 / layout B | ✅ 已验证 |
+| 发烧游戏 1.18.43.22 / layout A | ✅ v1.3.4 实机完整验证 |
 | PowerShell 2.0 / 旧 CLR 托管 EXE 验证 | ✅ v1.3.3 已合入修复并实机复测 |
 | Release CMD 编码 / 换行 | ✅ v1.3.3 已修复并复测 |
 | FeverGames 自定义安装目录 | ✅ `D:\FeverGames` 实机验证 |
@@ -119,7 +138,7 @@ v1.3.3 的 Release 入口 `.cmd` 已统一为 **无 BOM + CRLF**，并保持纯 
 
 1. 正常安装 / 更新发烧游戏，然后**完全退出平台**；
 2. 安装支持 `.zst` 的 7-Zip，或者准备 Windows 7 可用的独立 `zstd.exe`；
-3. 从 Releases 下载 v1.3.3 后运行：
+3. 从 Releases 下载 v1.3.4 后运行：
 
 ```text
 01_一键安装.cmd
@@ -144,9 +163,9 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
 ## 已知性能特征
 
-v1.3.3 仍优先保证 **正确性、兼容性和可恢复性**。当前 .NET 下载核心相比 Windows 8.1 上的官方下载器可能更慢，尤其在大文件本地拼接 / MD5，以及尾部大量小 chunk / 小文件阶段；这些阶段短暂显示 `0 B/s` 不一定代表网络卡死。
+v1.3.4 仍优先保证 **正确性、兼容性和可恢复性**。当前 .NET 下载核心相比 Windows 8.1 上的官方下载器可能更慢，尤其在大文件本地拼接 / MD5，以及尾部大量小 chunk / 小文件阶段；这些阶段短暂显示 `0 B/s` 不一定代表网络卡死。
 
-实验性的 DLL 直解 Zstd、并发与流水线优化暂不合入 v1.3.3。
+实验性的 DLL 直解 Zstd、并发与流水线优化暂不合入 v1.3.4。
 
 ## 隐私与边界
 
