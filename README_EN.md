@@ -1,19 +1,18 @@
-# FeverGames Legacy Windows Downloader v1.3.3
+# FeverGames Legacy Windows Downloader v1.3.4
 
 A community compatibility project that restores the newer FeverGames download backend on **Windows 7 SP1 x64**.
 
-v1.3.3 is the current recommended stable release. Since the v1.3.2 release was removed, v1.3.3 includes both:
+v1.3.4 is the current recommended stable release. It adds exact-byte support for **FeverGames 1.18.43.22 / layout A** on top of the v1.3.3 Windows 7 compatibility fixes.
 
-1. the v1.3.2 PowerShell 2.0 / older-CLR managed EXE validation fix;
-2. the v1.3.3 Release CMD encoding / line-ending fix.
+The new layout has been verified end-to-end on Windows 7: the patch installed successfully, the game download completed, and the downloaded game launched successfully.
 
-It keeps the already end-to-end verified v1.2 .NET download core, the five exact-byte frontend patch points, layout A/B handling, custom-path detection, backup/restore, and UAC flow unchanged.
+v1.3.4 retains the PowerShell 2.0 / older-CLR managed EXE validation fix from v1.3.2, the Release CMD encoding / line-ending fix from v1.3.3, and the already verified v1.2 .NET download core.
 
 ## Download
 
-Current stable release: **v1.3.3**
+Current stable release: **v1.3.4**
 
-https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.3
+https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.4
 
 Release ZIP:
 
@@ -50,13 +49,27 @@ A source checkout keeps only the CMD entry points in the repository root. PowerS
 - [Compatibility notes](docs/COMPATIBILITY.md)
 - [Technical notes](docs/TECHNICAL.md)
 - [Documentation index](docs/README.md)
-- [v1.3.3 Release Notes](docs/releases/v1.3.3.md)
+- [v1.3.4 Release Notes](docs/releases/v1.3.4.md)
 
 Normal users should prefer the Release ZIP. `scripts/legacy-v1.2/` is retained only for historical reference, regression work, and old-install recovery context.
 
-## v1.3.3 integrated fixes
+## v1.3.4 added support
 
-### 1. Managed EXE validation fix retained from v1.3.2
+### FeverGames 1.18.43.22 / layout A
+
+v1.3.4 adds an exact-byte profile for `FeverGames 1.18.43.22 / layout A`. The five frontend patch locations were re-identified for the new binary and are still validated before modification.
+
+Original `FeverGamesInstaller.exe` SHA-256:
+
+```text
+d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27
+```
+
+Windows 7 validation covered patch installation, a complete game download, and a successful game launch.
+
+## v1.3.3 / v1.3.2 fixes retained
+
+### 1. Managed EXE validation fix from v1.3.2
 
 On some relatively stock Windows 7 / PowerShell 2.0 systems, v1.3.1 could successfully invoke the .NET 4 C# compiler and create the replacement downloader, but then stop with:
 
@@ -68,7 +81,7 @@ The issue was the validation method rather than the frontend patch or the C# com
 
 The installer and status checker now validate managed executables by reading the PE Optional Header and checking the **CLR / COM Descriptor** directly. Invalid PE/CLR output still fails safely before replacement.
 
-### 2. Release CMD encoding / line-ending fix in v1.3.3
+### 2. Release CMD encoding / line-ending fix from v1.3.3
 
 The removed v1.3.2 Release ZIP could contain CMD wrappers that Windows 7 `cmd.exe` parsed incorrectly, causing symptoms such as:
 
@@ -87,6 +100,7 @@ v1.3.3 Release CMD wrappers are encoded as **BOM-less ASCII with CRLF line endin
 - FeverGames `1.18.42.12`
 - FeverGames `1.18.42.14 / layout A`
 - FeverGames `1.18.42.14 / layout B`
+- FeverGames `1.18.43.22 / layout A` — full Windows 7 validation: patch, complete download, successful game launch
 - Custom FeverGames root `D:\FeverGames`
 - Custom 7-Zip root `D:\7-Zip`
 - PowerShell 2.0 / older-CLR managed EXE validation path fixed and re-tested
@@ -103,7 +117,7 @@ Original `FeverGamesInstaller.exe` SHA256 for `1.18.42.14 / layout B`:
 
 1. Install/update FeverGames normally and fully exit it.
 2. Install a `.zst`-capable 7-Zip, or provide a Windows 7 compatible `zstd.exe`.
-3. Run `01_一键安装.cmd` from the v1.3.3 Release ZIP, or `01_Zero_Start_One_Click_Install.cmd` from a source checkout.
+3. Run `01_一键安装.cmd` from the v1.3.4 Release ZIP, or `01_Zero_Start_One_Click_Install.cmd` from a source checkout.
 
 A ready installation should include:
 
@@ -116,9 +130,9 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
 ## Performance and scope
 
-v1.3.3 still prioritizes correctness and compatibility. Large-file local reconstruction/MD5 and the final stage with many tiny chunks/files can be slower than the official Windows 8.1 downloader and may temporarily show 0 B/s.
+v1.3.4 still prioritizes correctness and compatibility. Large-file local reconstruction/MD5 and the final stage with many tiny chunks/files can be slower than the official Windows 8.1 downloader and may temporarily show 0 B/s.
 
-Experimental DLL-based Zstd, parallel, and pipelined downloader changes are intentionally not included in v1.3.3.
+Experimental DLL-based Zstd, parallel, and pipelined downloader changes are intentionally not included in v1.3.4.
 
 This project does not bypass account login or content entitlement and does not distribute game content. Do not publish PRIVATE Manifest responses, AES keys, tokens/cookies, device identifiers, signatures, security keys, proprietary FeverGames executables, or game files.
 
