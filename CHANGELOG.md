@@ -1,5 +1,17 @@
 # 更新日志
 
+## v1.3.4
+
+新增 FeverGames `1.18.43.22 / layout A` 正式支持。
+
+- 重新定位新版 `FeverGamesInstaller.exe` 的 5 个精确补丁点：Gate A、Gate B、`download_check` OS label、`download_check` minor、`downloadIPC --sysVer` getter；
+- 保持 5 点 exact-byte 校验机制，不因版本目录名称相同而盲目套用旧布局；
+- `1.18.43.22 / layout A` 原版 `FeverGamesInstaller.exe` SHA-256：`d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27`；
+- Windows 7 实机完成完整验证：补丁安装成功、游戏完整下载成功、下载完成后成功进入游戏；
+- 保留 v1.3.3 的 Release CMD 无 BOM + CRLF 修复；
+- 保留 v1.3.2 的 PowerShell 2.0 / 旧 CLR managed EXE 验证修复；
+- 下载核心继续沿用已完成端到端验证的 v1.2 .NET 实现。
+
 ## v1.3.3
 
 当前建议使用的正式版本。由于 v1.3.2 Release 已删除，v1.3.3 同时包含 v1.3.2 的修复内容和本次新增的 CMD 打包修复。
