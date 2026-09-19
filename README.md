@@ -22,7 +22,7 @@ v1.3.4 是当前建议使用的正式版本。本版本在 v1.3.3 的 Windows 7 
 
 当前正式版：**v1.3.4**
 
-- [前往 GitHub Releases 下载 v1.3.3](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.4)
+- [前往 GitHub Releases 下载 v1.3.4](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.4)
 
 Release ZIP 根目录：
 
