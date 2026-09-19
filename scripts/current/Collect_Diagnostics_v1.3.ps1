@@ -6,7 +6,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # scripts\current -> scripts -> repository root
 $packageRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
-$result = Join-Path $packageRoot "FeverGames_v1.3.4_Diagnostic_Result"
+$result = Join-Path $packageRoot "FeverGames_v1.3.5_Diagnostic_Result"
 
 if (Test-Path $result) {
     Remove-Item $result -Recurse -Force
@@ -38,6 +38,34 @@ try {
                 Copy-Item $marker (Join-Path $result "install_marker.txt") -Force
                 break
             }
+        }
+
+        $decoderInfo = Join-Path $result "decoder_info.txt"
+        $libzstd = Join-Path $target.Path "libzstd.dll"
+        if (Test-Path $libzstd -PathType Leaf) {
+            try {
+                $shaObj = [System.Security.Cryptography.SHA256]::Create()
+                try {
+                    $bytes = [System.IO.File]::ReadAllBytes($libzstd)
+                    $sha = [BitConverter]::ToString($shaObj.ComputeHash($bytes)).Replace("-","").ToLowerInvariant()
+                }
+                finally { $shaObj.Dispose() }
+
+                $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($libzstd)
+                @(
+                    ("Path: " + $libzstd),
+                    ("FileVersion: " + $vi.FileVersion),
+                    ("ProductVersion: " + $vi.ProductVersion),
+                    ("SHA256: " + $sha)
+                ) | Out-File -FilePath $decoderInfo -Encoding UTF8
+            }
+            catch {
+                ("libzstd.dll present, metadata read failed: " + $_.Exception.Message) |
+                    Out-File -FilePath $decoderInfo -Encoding UTF8
+            }
+        }
+        else {
+            "libzstd.dll missing" | Out-File -FilePath $decoderInfo -Encoding UTF8
         }
     }
 }
