@@ -165,7 +165,7 @@ function Find-InstalledDecoder([string]$Dir) {
 
 try {
     Write-Host "============================================================"
-    Write-Host " FeverGames Legacy Windows Downloader v1.3.2 - Status"
+    Write-Host " FeverGames Legacy Windows Downloader v1.3.4 - Status"
     Write-Host "============================================================"
 
     if ([String]::IsNullOrEmpty($InstallDir)) { throw "InstallDir is required." }
