@@ -1,20 +1,48 @@
-# FeverGames Legacy Windows Downloader v1.3.4
+# FeverGames Legacy Windows Downloader
 
-A community compatibility project that restores the newer FeverGames download backend on **Windows 7 SP1 x64**.
+A community compatibility project that restores the newer FeverGames game-download backend on **Windows 7 SP1 x64**.
 
-v1.3.4 is the current recommended stable release. It adds exact-byte support for **FeverGames 1.18.43.22 / layout A** on top of the v1.3.3 Windows 7 compatibility fixes.
+Current stable release: **v1.3.5**
 
-The new layout has been verified end-to-end on Windows 7: the patch installed successfully, the game download completed, and the downloaded game launched successfully.
+- [Download v1.3.5](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.5)
+- [Changelog](CHANGELOG.md)
+- [v1.3.5 Release Notes](docs/releases/v1.3.5.md)
 
-v1.3.4 retains the PowerShell 2.0 / older-CLR managed EXE validation fix from v1.3.2, the Release CMD encoding / line-ending fix from v1.3.3, and the already verified v1.2 .NET download core.
+> This project fixes **FeverGames download-pipeline compatibility**. It does not make every downloaded game itself compatible with Windows 7.
 
-## Download
+## What it does
 
-Current stable release: **v1.3.4**
+The project combines:
 
-https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.4
+- exact-byte patch profiles for verified `FeverGamesInstaller.exe` layouts;
+- a Windows 7-compatible managed replacement for `downloadIPC.exe`;
+- Manifest / Index / Chunk retrieval, reconstruction and integrity checks;
+- an in-process **libzstd.dll 1.5.6** backend for Zstandard data;
+- install, status, restore and diagnostic workflows.
 
-Release ZIP:
+Unknown or changed frontend layouts are rejected unless all five exact target locations match a known profile.
+
+## Verified configurations
+
+| Environment / build | Status |
+|---|---|
+| Windows 7 SP1 x64 | ✅ Primary target, real-machine verified |
+| FeverGames 1.18.42.12 / layout A | ✅ Verified |
+| FeverGames 1.18.42.14 / layout A | ✅ Verified |
+| FeverGames 1.18.42.14 / layout B | ✅ Verified |
+| FeverGames 1.18.43.22 / layout A | ✅ Full download and game launch verified |
+| Windows 8.1 | ℹ️ Official downloader currently works directly in normal cases |
+| Windows 10 / 11 | ℹ️ Outside this project's target; prefer the official client |
+
+See [compatibility notes](docs/COMPATIBILITY.md) for details.
+
+## Download and quick start
+
+Use the Release ZIP for normal use:
+
+**[FeverGames Legacy Windows Downloader v1.3.5](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.5)**
+
+Release layout:
 
 ```text
 01_一键安装.cmd
@@ -25,115 +53,84 @@ Release ZIP:
 core\
 ```
 
-A source checkout keeps only the CMD entry points in the repository root. PowerShell implementation details are organized under `scripts/`.
+1. Install/update FeverGames normally.
+2. Extract the entire Release ZIP. Do not run CMD files directly from the ZIP view.
+3. Fully exit FeverGames.
+4. Run `01_一键安装.cmd`.
 
-## Repository layout
-
-```text
-/
-├─ 01_Zero_Start_One_Click_Install.cmd
-├─ 02_Check_Status.cmd
-├─ 03_Restore_Official_Original.cmd
-├─ 04_Collect_Diagnostics.cmd
-├─ 05_Clear_Win7_Downloader_Cache_Optional.cmd
-├─ scripts/
-│  ├─ current/          # current v1.3.x implementation
-│  └─ legacy-v1.2/      # historical v1.2 scripts
-├─ docs/
-│  ├─ COMPATIBILITY.md
-│  ├─ TECHNICAL.md
-│  └─ releases/         # historical release notes and checksums
-└─ src/                 # packed downloadIPC C# source
-```
-
-- [Compatibility notes](docs/COMPATIBILITY.md)
-- [Technical notes](docs/TECHNICAL.md)
-- [Documentation index](docs/README.md)
-- [v1.3.4 Release Notes](docs/releases/v1.3.4.md)
-
-Normal users should prefer the Release ZIP. `scripts/legacy-v1.2/` is retained only for historical reference, regression work, and old-install recovery context.
-
-## v1.3.4 added support
-
-### FeverGames 1.18.43.22 / layout A
-
-v1.3.4 adds an exact-byte profile for `FeverGames 1.18.43.22 / layout A`. The five frontend patch locations were re-identified for the new binary and are still validated before modification.
-
-Original `FeverGamesInstaller.exe` SHA-256:
-
-```text
-d86f38ea0ab650b94e467dfc7a3c0f01587fa90d6d079d9f04f5b87ae5579c27
-```
-
-Windows 7 validation covered patch installation, a complete game download, and a successful game launch.
-
-## v1.3.3 / v1.3.2 fixes retained
-
-### 1. Managed EXE validation fix from v1.3.2
-
-On some relatively stock Windows 7 / PowerShell 2.0 systems, v1.3.1 could successfully invoke the .NET 4 C# compiler and create the replacement downloader, but then stop with:
-
-```text
-Compiled downloader did not validate as a managed .NET executable.
-```
-
-The issue was the validation method rather than the frontend patch or the C# compilation itself. Older scripts asked the current PowerShell CLR to load/identify the newly compiled assembly. An older CLR can fail that operation even when the file itself is a valid newer managed executable.
-
-The installer and status checker now validate managed executables by reading the PE Optional Header and checking the **CLR / COM Descriptor** directly. Invalid PE/CLR output still fails safely before replacement.
-
-### 2. Release CMD encoding / line-ending fix from v1.3.3
-
-The removed v1.3.2 Release ZIP could contain CMD wrappers that Windows 7 `cmd.exe` parsed incorrectly, causing symptoms such as:
-
-```text
-锘緻echo off
-powershell.exe -> hell.exe
-echo -> ho
-goto -> to
-```
-
-v1.3.3 Release CMD wrappers are encoded as **BOM-less ASCII with CRLF line endings**, while keeping the Chinese file names such as `01_一键安装.cmd`.
-
-## Verified configurations
-
-- Windows 7 SP1 x64
-- FeverGames `1.18.42.12`
-- FeverGames `1.18.42.14 / layout A`
-- FeverGames `1.18.42.14 / layout B`
-- FeverGames `1.18.43.22 / layout A` — full Windows 7 validation: patch, complete download, successful game launch
-- Custom FeverGames root `D:\FeverGames`
-- Custom 7-Zip root `D:\7-Zip`
-- PowerShell 2.0 / older-CLR managed EXE validation path fixed and re-tested
-- Release CMD encoding / line-ending issue fixed and re-tested
-- Minecraft Bedrock interoperability edition fully downloaded, launched, and entered a world
-
-Original `FeverGamesInstaller.exe` SHA256 for `1.18.42.14 / layout B`:
-
-```text
-0a2a9568ac788227f0815e3c23761cadc11b51ee4ba9b86336cb2abf61e178e9
-```
-
-## Quick start
-
-1. Install/update FeverGames normally and fully exit it.
-2. Install a `.zst`-capable 7-Zip, or provide a Windows 7 compatible `zstd.exe`.
-3. Run `01_一键安装.cmd` from the v1.3.4 Release ZIP, or `01_Zero_Start_One_Click_Install.cmd` from a source checkout.
+v1.3.5 bundles `libzstd.dll 1.5.6 x64`, so users **no longer need to install 7-Zip or zstd.exe**.
 
 A ready installation should include:
 
 ```text
 Frontend patch count: 5/5
 downloadIPC.exe = managed Win7 replacement
+decoder = libzstd.dll ... (in-process)
 rollback backup = COMPLETE
 RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 ```
 
-## Performance and scope
+## System requirements
 
-v1.3.4 still prioritizes correctness and compatibility. Large-file local reconstruction/MD5 and the final stage with many tiny chunks/files can be slower than the official Windows 8.1 downloader and may temporarily show 0 B/s.
+The recommended target is a reasonably intact **Windows 7 SP1 x64** installation with:
 
-Experimental DLL-based Zstd, parallel, and pipelined downloader changes are intentionally not included in v1.3.4.
+- `cmd.exe`;
+- `powershell.exe`;
+- a usable `csc.exe` from .NET Framework 2.0 / 3.5 / 4.x;
+- administrator access;
+- normal registry, process and file-system functionality.
 
-This project does not bypass account login or content entitlement and does not distribute game content. Do not publish PRIVATE Manifest responses, AES keys, tokens/cookies, device identifiers, signatures, security keys, proprietary FeverGames executables, or game files.
+7-Zip is no longer a runtime prerequisite for the Release ZIP.
 
-Project-authored code/scripts/docs are licensed under the MIT License. Third-party software and content remain the property of their respective owners.
+Highly stripped or modified Windows 7 images may fail if PowerShell, the .NET compiler, UAC, or other base components were removed. See [environment requirements](docs/ENVIRONMENT.md).
+
+## v1.3.5 Zstandard backend
+
+The stable downloader now calls Zstandard in-process:
+
+```text
+downloadIPC.exe
+  -> P/Invoke
+  -> libzstd.dll 1.5.6
+  -> ZSTD_decompressStream
+```
+
+The standalone P/Invoke path was verified on Windows 7 SP1 x64 under CLR 2.0, and a real FeverGames download completed without using 7-Zip.
+
+Experimental Test2/Test3/Test4 builds also explored file-level and chunk-level concurrency. Those tuning parameters are intentionally **not included in the stable v1.3.5 build**, because different games can have very different manifests, file counts, chunk distributions and CDN behavior.
+
+## Safety and rollback
+
+The installer does not trust a folder version alone. It checks the five target byte sequences against known profiles before making changes.
+
+A rollback backup is created before replacement. The SHA-256 of a patch-supplied `libzstd.dll` is recorded; restore removes that DLL only when it is still unchanged.
+
+This project does not bypass account login or content entitlement and does not distribute game content. Do not publish PRIVATE Manifest responses, AES keys, tokens/cookies, device identifiers, signatures, or security keys.
+
+## Source checkout
+
+The packed managed downloader source is stored as:
+
+```text
+src/downloadIPC_Win7_v1.2.cs.gz.b64
+```
+
+`scripts/current/Prepare_Source_v1.2.ps1` reconstructs it before compilation.
+
+The Release ZIP bundles `libzstd.dll`. A source checkout does not store the third-party DLL binary; for source testing, place the official Zstandard v1.5.6 x64 `libzstd.dll` at:
+
+```text
+tools\libzstd.dll
+```
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Compatibility notes](docs/COMPATIBILITY.md)
+- [Environment requirements](docs/ENVIRONMENT.md)
+- [Technical notes](docs/TECHNICAL.md)
+- [Changelog](CHANGELOG.md)
+- [v1.3.5 Release Notes](docs/releases/v1.3.5.md)
+- [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
+
+Project-authored code, scripts and documentation are licensed under the MIT License. Zstandard/libzstd is used under its BSD license option; see the third-party notices for details.
