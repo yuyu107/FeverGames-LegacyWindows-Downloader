@@ -1,99 +1,97 @@
 # 系统环境要求
 
-FeverGames Legacy Windows Downloader 主要面向 **Windows 7 SP1 x64**。
+本项目主要面向 **Windows 7 SP1 x64**。
 
-本工具不是纯静态单文件补丁。安装、检查、恢复和诊断过程中需要系统仍保留一些基础组件。如果使用深度精简版 Windows 7，可能会因为系统组件缺失而无法运行安装器；这类问题不等同于 FeverGames 补丁逻辑失败。
+## 推荐环境
 
-## 最低运行要求
+建议使用接近原版的 Windows 7 SP1 64 位系统，并保留常见系统组件。
 
-建议环境：接近原版的 **Windows 7 SP1 x64**。
+安装器至少需要：
 
-安装器运行时需要：
+- `cmd.exe`
+- `powershell.exe`
+- .NET Framework 2.0 / 3.5 / 4.x 中至少一个可用的 C# 编译器 `csc.exe`
+- 管理员权限 / UAC 提权能力
+- 正常的文件系统、注册表和进程查询功能
 
-- `cmd.exe`：用于运行 Release 包中的 `.cmd` 入口；
-- `powershell.exe`：用于执行安装、状态检查、恢复和诊断脚本；
-- .NET Framework 2.0 / 3.5 / 4.x 中至少一个可用的 C# 编译器 `csc.exe`；
-- 管理员权限：用于修改 FeverGames 安装目录中的程序文件；
-- 7-Zip 或 Windows 7 可用的 `zstd.exe`：用于处理 `.zst` 数据；
-- 基本注册表、文件系统和进程查询能力：用于自动寻找 FeverGames、7-Zip、备份和状态检查。
+## v1.3.5 不再要求安装 7-Zip
 
-## 精简版 Windows 7 说明
-
-部分精简版系统可能移除或破坏：
-
-- PowerShell；
-- .NET Framework / C# 编译器；
-- WMI / 注册表查询相关组件；
-- 系统 PATH / 环境变量；
-- UAC 或管理员提权相关组件。
-
-如果这些组件缺失，安装器可能无法继续。当前版本不保证能在深度精简系统上完整运行。
-
-## 常见环境错误
-
-### 找不到 PowerShell
-
-如果运行 `01_一键安装.cmd` 后看到：
+v1.3.5 Release ZIP 已包含：
 
 ```text
-'powershell.exe' 不是内部或外部命令，也不是可运行的程序或批处理文件。
+core\tools\libzstd.dll
 ```
 
-说明系统中没有可用的 PowerShell，或者 `powershell.exe` 所在路径不可用。当前安装器无法继续运行。
+版本为 **Zstandard 1.5.6 x64**。
 
-建议使用接近原版的 Windows 7 SP1 x64，或先恢复 Windows PowerShell 组件。
+安装器会把 DLL 复制到当前 FeverGames 版本目录，使替代 `downloadIPC.exe` 可以直接通过 P/Invoke 调用 `ZSTD_decompressStream`。
 
-### 找不到 C# 编译器
+因此普通 Release 用户不需要：
 
-如果看到：
+- 安装 7-Zip；
+- 配置 7-Zip 安装目录；
+- 单独准备 `zstd.exe`。
+
+## 从源码仓库运行
+
+源码仓库不直接提交第三方 `libzstd.dll` 二进制。
+
+如果从源码 checkout 运行根目录的安装入口，需要自行从 Zstandard 官方 **v1.5.6 Windows x64** Release 中取得：
 
 ```text
-No compatible .NET C# compiler was found (2.0/3.5/4.x).
+libzstd.dll
 ```
 
-说明系统里没有找到可用的 .NET C# 编译器 `csc.exe`。
-
-安装器需要在目标机器上编译 Win7 可运行的替代 `downloadIPC.exe`，因此需要系统中存在 .NET Framework 2.0 / 3.5 / 4.x 的编译器。
-
-### CMD 入口乱码或命令被截断
-
-如果看到：
+并放到：
 
 ```text
-锘緻echo off
-powershell.exe -> hell.exe
-echo -> ho
-goto -> to
+tools\libzstd.dll
 ```
 
-这是旧 Release 包 `.cmd` 入口文件编码 / 换行不兼容 Windows 7 `cmd.exe` 的表现。请删除旧解压目录，重新下载 v1.3.4 或更新版本。
+普通用户应优先使用 GitHub Release ZIP，因为正式包已经包含经过 Win7 实机测试的 DLL。
 
-v1.3.4 继续保持入口 `.cmd` 统一为无 BOM + CRLF，并保持纯 ASCII 命令内容。
+## .NET / C# 编译器
 
-## 不建议的处理方式
+替代 `downloadIPC.exe` 会在目标机器上使用系统现有的 `csc.exe` 编译。
 
-- 不建议使用来源不明的“系统组件修复包”；
-- 不建议从随机 DLL 网站下载 PowerShell、.NET 或系统 DLL；
-- 不建议手动替换 `System32` 中的系统文件；
-- 不建议把其它机器上编译出的 `downloadIPC.exe` 手动复制到不同 FeverGames 环境中。
+安装器依次尝试常见 Framework / Framework64 路径，包括 .NET 4.x、3.5 和 2.0。
 
-## 反馈时请提供
+v1.3.2 起，生成后的 managed EXE 不再通过当前 PowerShell CLR 直接加载验证，而是检查 PE Optional Header 中的 CLR / COM Descriptor，以避免 PowerShell 2.0 / 旧 CLR 对较新程序集的误判。
 
-如果怀疑是系统环境问题，请反馈：
+## PowerShell
 
-```text
-where powershell
-powershell -NoProfile -Command "$PSVersionTable.PSVersion; [Environment]::Version"
-dir %WINDIR%\Microsoft.NET\Framework\v*\csc.exe
-dir %WINDIR%\Microsoft.NET\Framework64\v*\csc.exe
-```
+需要可运行的 Windows PowerShell。
 
-同时提供：
+深度精简版系统如果已经删除 `powershell.exe`，当前一键安装流程无法正常工作。
 
-- Windows 版本；
-- 是否为精简版 / Ghost 版 / 魔改版；
-- FeverGames 安装路径；
-- 运行的工具版本；
-- 第一条错误信息。
+## 管理员权限
 
-请不要公开 Token、Cookie、PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 或其它账号 / 临时鉴权信息。
+修改 FeverGames 版本目录中的：
+
+- `FeverGamesInstaller.exe`
+- `downloadIPC.exe`
+- `libzstd.dll`
+
+通常需要管理员权限。
+
+一键入口会请求 UAC 提权，并等待提权后的安装流程结束。
+
+## 深度精简 / Ghost / 魔改系统
+
+以下情况都可能导致安装失败：
+
+- PowerShell 被删除；
+- .NET Framework 或 `csc.exe` 被裁剪；
+- UAC / RunAs 功能损坏；
+- 系统加密 API / SHA-256 支持异常；
+- 基础文件系统、进程或注册表组件被裁剪。
+
+这种环境出现问题时，应优先收集诊断，而不是直接绕过检查。
+
+## 网络与磁盘
+
+替代 downloader 仍要完成 Manifest、Index、Chunk 下载、解密、Zstd 解压、文件重组和 MD5 校验。
+
+大量小文件 / 小 Chunk、机械硬盘、慢速存储或 CDN 延迟可能让末尾阶段明显变慢；短暂 `0 B/s` 不一定代表卡死。
+
+v1.3.5 正式版没有启用针对某个游戏调出来的实验并发参数。
