@@ -69,6 +69,21 @@ try {
     Ok "Official/original FeverGamesInstaller.exe restored."
     Ok "Official/original downloadIPC.exe restored."
 
+    $copiedLibZstdHashFile = Join-Path $backupDir "copied_libzstd.sha256"
+    $liveLibZstd = Join-Path $InstallDir "libzstd.dll"
+
+    if ((Test-Path $copiedLibZstdHashFile) -and (Test-Path $liveLibZstd)) {
+        $expected = (Get-Content $copiedLibZstdHashFile | Select-Object -First 1).Trim()
+        $actual = Get-Sha256 $liveLibZstd
+
+        if ($actual -eq $expected) {
+            Remove-Item $liveLibZstd -Force
+            Ok "Patch-supplied libzstd.dll removed."
+        } else {
+            Warn "libzstd.dll was changed after installation; it was kept."
+        }
+    }
+
     $copiedZstdHashFile = Join-Path $backupDir "copied_zstd.sha256"
     $liveZstd = Join-Path $InstallDir "zstd.exe"
 
