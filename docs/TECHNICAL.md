@@ -7,7 +7,7 @@ FeverGames Legacy Windows Downloader 由两部分组成：
 1. 对已知 `FeverGamesInstaller.exe` 布局进行 5 点 exact-byte 兼容补丁；
 2. 用 Windows 7 可运行的托管 `downloadIPC.exe` 替代官方下载后端。
 
-当前正式版：**v1.3.5**。
+当前正式版：**v1.3.6**。
 
 ## 前端补丁
 
@@ -111,7 +111,26 @@ Windows 7 SP1 x64 + CLR 2.0 的独立流式解压测试已经通过，随后在�
 
 因此把某一个游戏上效果较好的固定 `4 / 6 worker` 参数直接作为全局策略并不稳妥。
 
-v1.3.5 正式版只吸收“取消外部 7-Zip 依赖”的通用改进，下载调度保持已验证的串行实现。
+v1.3.6 正式版继续保持已验证的串行下载调度；Test2 / Test3 / Test4 的固定并发参数仍未纳入正式版。
+
+## v1.3.6：FeverGames 1.18.44.2-A
+
+v1.3.6 新增 `1.18.44.2 / layout A` exact-byte profile。原版 `FeverGamesInstaller.exe`：
+
+```text
+SHA-256: 99b71ce13933694f7eaba85a8e9890d4a3f93fe09c73ab4a3c42da33b1b04aaf
+Gate A   : 0xABD2B0
+Gate B   : 0x70F0AD
+NetLabel : 0xA605DC
+NetMinor : 0xA60652
+Getter   : 0xA61CA0
+```
+
+Gate B 的直接控制流已确认是 `CALL GateA -> TEST AL,AL -> JNE +0xD6`；NetLabel 的 RIP-relative 目标从实际字符串 `windows 7` 调整到 `windows 8.1`。
+
+Windows 7 SP1 x64 实机验证结果：5/5 补丁成功、3133/3133 文件完整下载、游戏成功启动并进入世界。
+
+官方 1.18.44.2 `downloadIPC.exe` 内部出现 QueueDownloader、client pool、smart IP pool 等新调度符号，但实机结果表明 FeverGames 与 downloader 之间现有外部任务接口仍可由本项目 managed downloader 正常处理。
 
 ## 状态检查
 
@@ -158,6 +177,8 @@ decoder_info.txt
 ```
 
 其中记录目标版本目录中的 `libzstd.dll` 路径、版本和 SHA-256。
+
+v1.3.6 修复 Win7 / CLR 2.0 下 `SHA256Managed.Dispose()` 不可用导致的诊断收集错误，改用旧 CLR 兼容的 `Clear()`。
 
 诊断不会主动收集 PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感鉴权数据。
 
