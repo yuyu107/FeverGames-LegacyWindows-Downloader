@@ -1,6 +1,20 @@
 # 更新日志
 
 
+## v1.3.6
+
+新增 FeverGames `1.18.44.2 / layout A` 正式支持，并修复 Win7 / CLR 2.0 下诊断 SHA-256 收集兼容问题。
+
+- 新增 `1.18.44.2-A` 5 点 exact-byte profile；
+- `1.18.44.2-A` 原版 `FeverGamesInstaller.exe` SHA-256：`99b71ce13933694f7eaba85a8e9890d4a3f93fe09c73ab4a3c42da33b1b04aaf`；
+- 新补丁点：Gate A `0xABD2B0`、Gate B `0x70F0AD`、NetLabel `0xA605DC`、NetMinor `0xA60652`、Getter `0xA61CA0`；
+- Windows 7 SP1 x64 实机完成 5/5 补丁、3133/3133 文件完整下载、游戏启动并成功进入世界；
+- 实机结果确认 FeverGames 1.18.44.2 虽然更新了官方下载器内部 QueueDownloader / client pool / smart IP pool 等实现，但现有外部任务接口仍可由 managed downloader 正常处理；
+- 修复 `Collect_Diagnostics_v1.3.ps1` 在旧 CLR 中调用 `SHA256Managed.Dispose()` 不可用的问题，改为兼容的 `Clear()`；
+- 继续使用 v1.3.5 已验证的进程内 `libzstd.dll 1.5.6` 和串行下载 / 重组路径；
+- Test2 / Test3 / Test4 的实验并发参数仍不进入正式版；
+- 继续保持未知布局安全停止、5 点 exact-byte 校验和可恢复原文件机制。
+
 ## v1.3.5
 
 取消对用户安装 7-Zip 的运行时依赖，改用内置 `libzstd.dll 1.5.6` 进行 Zstandard 解压。
