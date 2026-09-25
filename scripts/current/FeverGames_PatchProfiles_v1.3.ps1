@@ -177,3 +177,45 @@ $FeverGamesPatchProfiles["1.18.43.22-A"] = @{
         }
     )
 }
+
+# FeverGames 1.18.44.2 / layout A
+# Verified on Windows 7 SP1 x64: patch install, full game download,
+# game launch and entering a world succeeded.
+# FeverGamesInstaller.exe SHA256:
+# 99b71ce13933694f7eaba85a8e9890d4a3f93fe09c73ab4a3c42da33b1b04aaf
+$FeverGamesPatchProfiles["1.18.44.2-A"] = @{
+    Build = "1.18.44.2 / layout A"
+    FolderBuild = "1.18.44.2"
+    InstallerOriginalSha256 = "99b71ce13933694f7eaba85a8e9890d4a3f93fe09c73ab4a3c42da33b1b04aaf"
+    Entries = @(
+        @{
+            Key="GateA"; Name="Gate A - central Win10 helper"; Offset=[Int64]0xABD2B0
+            Original=[byte[]]@(0x40,0x53,0x48,0x81,0xEC,0x50)
+            Patched=[byte[]]@(0xB8,0x01,0x00,0x00,0x00,0xC3)
+        },
+        @{
+            Key="GateB"; Name="Gate B - checkSystemVersion caller"; Offset=[Int64]0x70F0AD
+            Original=[byte[]]@(0x0F,0x85,0xD6,0x00,0x00,0x00)
+            Patched=[byte[]]@(0x90,0xE9,0xD6,0x00,0x00,0x00)
+        },
+        @{
+            Key="NetLabel"; Name="download_check os-ver label Win7 -> Win8.1"; Offset=[Int64]0xA605DC
+            Original=[byte[]]@(0x48,0x8D,0x15,0x95,0x46,0x4E,0x00)
+            Patched=[byte[]]@(0x48,0x8D,0x15,0xB5,0x46,0x4E,0x00)
+        },
+        @{
+            Key="NetMinor"; Name="download_check minor 1 -> 3"; Offset=[Int64]0xA60652
+            Original=[byte[]]@(0x8B,0x55,0xA7)
+            Patched=[byte[]]@(0x6A,0x03,0x5A)
+        },
+        @{
+            Key="Getter"; Name="downloadIPC sysVer getter -> 8.1"; Offset=[Int64]0xA61CA0
+            Original=[byte[]]@(
+                0x48,0x89,0x4C,0x24,0x08,0x53,0x48,0x83,0xEC,0x20,0x48,0x8B,0xD9,
+                0x8B,0x15,0x65,0x28,0x28,0x04,0x65,0x48,0x8B,0x04,0x25,0x58,0x00,0x00,0x00,0xB9
+            )
+            Patched=$FG_Getter81
+            AlternateBefore=$FG_Getter10
+        }
+    )
+}
