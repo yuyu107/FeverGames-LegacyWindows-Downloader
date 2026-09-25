@@ -2,7 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 $ThisScript = $MyInvocation.MyCommand.Definition
-$PackageVersion = "1.3.5"
+$PackageVersion = "1.3.6"
 
 function Info($s){ Write-Host "[INFO] $s" }
 function Ok($s){ Write-Host "[OK]   $s" }
@@ -220,7 +220,7 @@ function Find-CommandPath([string]$Name) {
 }
 
 function Find-Decoder([string]$Dir,[string]$ScriptDir) {
-    # v1.3.5 priority: in-process libzstd.dll.
+    # v1.3.6 priority: in-process libzstd.dll.
     # Source checkout layout: scripts\current -> repository root -> tools.
     $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 
@@ -510,11 +510,11 @@ try {
 
     $decoder = Find-Decoder $InstallDir $scriptDir
     if ($decoder -eq $null) {
-        throw "v1.3.5 requires libzstd.dll. For a source checkout, place the official x64 libzstd.dll 1.5.6 in the repository tools folder, or use the Release ZIP which already bundles it."
+        throw "v1.3.6 requires libzstd.dll. For a source checkout, place the official x64 libzstd.dll 1.5.6 in the repository tools folder, or use the Release ZIP which already bundles it."
     }
 
     if ($decoder.Type -ne "libzstd") {
-        throw ("v1.3.5 requires libzstd.dll; refusing external decoder fallback during installation (found " + $decoder.Type + ").")
+        throw ("v1.3.6 requires libzstd.dll; refusing external decoder fallback during installation (found " + $decoder.Type + ").")
     }
 
     Ok ("Decoder: " + $decoder.Type + " -> " + $decoder.Path)
