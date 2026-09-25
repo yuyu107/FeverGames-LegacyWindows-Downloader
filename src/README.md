@@ -28,9 +28,9 @@ scripts/current/downloadIPC_Win7_v1.2.cs
 
 还原出完整源码，然后由当前 v1.3.x 安装脚本编译。
 
-## v1.3.5 Zstandard 后端
+## v1.3.5+ Zstandard 后端
 
-当前打包源码与 v1.3.5 正式 Release 使用的托管 downloader 逻辑一致，Zstandard 解压已经改为通过 P/Invoke 调用：
+v1.3.6 继续沿用 v1.3.5 已验证的托管 downloader 核心；本次正式版主要新增 1.18.44.2-A 前端 profile 和诊断兼容修复，下载调度仍保持串行路径。Zstandard 解压通过 P/Invoke 调用：
 
 ```text
 libzstd.dll 1.5.6
@@ -50,4 +50,4 @@ tools\libzstd.dll
 
 然后再运行根目录的一键安装入口。
 
-普通用户应优先使用 GitHub Release ZIP；正式 v1.3.5 Release 已经内置经过 Windows 7 实机验证的 `libzstd.dll`。
+普通用户应优先使用 GitHub Release ZIP；正式 v1.3.6 Release 已经内置经过 Windows 7 实机验证的 `libzstd.dll`。
