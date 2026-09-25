@@ -6,7 +6,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # scripts\current -> scripts -> repository root
 $packageRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
-$result = Join-Path $packageRoot "FeverGames_v1.3.5_Diagnostic_Result"
+$result = Join-Path $packageRoot "FeverGames_v1.3.6_Diagnostic_Result"
 
 if (Test-Path $result) {
     Remove-Item $result -Recurse -Force
@@ -49,7 +49,7 @@ try {
                     $bytes = [System.IO.File]::ReadAllBytes($libzstd)
                     $sha = [BitConverter]::ToString($shaObj.ComputeHash($bytes)).Replace("-","").ToLowerInvariant()
                 }
-                finally { $shaObj.Dispose() }
+                finally { $shaObj.Clear() }
 
                 $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($libzstd)
                 @(
