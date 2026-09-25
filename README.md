@@ -4,11 +4,13 @@
 
 这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复 **发烧游戏（FeverGames）新版游戏下载后端** 在旧系统上的运行能力。
 
-当前正式版：**v1.3.5**
+当前正式版：**v1.3.6**
 
-- [下载最新正式版](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.5)
+- [下载最新正式版](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.6)
 - [查看更新日志](CHANGELOG.md)
-- [查看 v1.3.5 Release Notes](docs/releases/v1.3.5.md)
+- [查看 v1.3.6 Release Notes](docs/releases/v1.3.6.md)
+
+v1.3.6 新增 **FeverGames 1.18.44.2 / layout A** 精确支持，并修复 Win7 / CLR 2.0 下 `decoder_info.txt` 的 SHA-256 诊断采集兼容问题。下载核心继续沿用 v1.3.5 已验证的进程内 `libzstd.dll 1.5.6` + 串行下载 / 重组路径。
 
 > [!IMPORTANT]
 > 本项目解决的是 **发烧游戏平台的游戏下载流程兼容**，不是游戏本体的 Windows 7 运行兼容。
@@ -38,6 +40,7 @@
 | FeverGames 1.18.42.14 / layout A | ✅ 已验证 |
 | FeverGames 1.18.42.14 / layout B | ✅ 已验证 |
 | FeverGames 1.18.43.22 / layout A | ✅ 已验证完整下载并进入游戏 |
+| FeverGames 1.18.44.2 / layout A | ✅ 已验证完整下载、启动并进入世界 |
 | Windows 8.1 | ℹ️ 官方新版 downloader 当前可直接使用，通常无需本项目 |
 | Windows 10 / 11 | ℹ️ 不属于本项目目标，应优先使用官方程序 |
 
@@ -50,7 +53,7 @@
 
 普通用户建议直接下载 Release ZIP：
 
-**[FeverGames Legacy Windows Downloader v1.3.5](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.5)**
+**[FeverGames Legacy Windows Downloader v1.3.6](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.6)**
 
 解压后会看到：
 
@@ -74,7 +77,7 @@ core\
 01_一键安装.cmd
 ```
 
-v1.3.5 Release ZIP 已经自带 `libzstd.dll`，**不再要求用户另外安装 7-Zip 或 zstd.exe**。
+v1.3.6 Release ZIP 已经自带 `libzstd.dll`，**不再要求用户另外安装 7-Zip 或 zstd.exe**。
 
 安装完成后可运行：
 
@@ -128,7 +131,7 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
 安装前会先确认目标文件与已知补丁布局匹配，并为官方文件建立 rollback backup。如果安装后的验证失败，安装流程会尽量自动回滚。
 
-v1.3.5 安装时复制的 `libzstd.dll` 会记录 SHA-256；恢复官方文件时，只有在该 DLL 仍与安装时记录一致的情况下才会删除，避免误删用户后来替换的文件。
+v1.3.6 安装时复制的 `libzstd.dll` 会记录 SHA-256；恢复官方文件时，只有在该 DLL 仍与安装时记录一致的情况下才会删除，避免误删用户后来替换的文件。
 
 项目不实现：
 
@@ -143,7 +146,7 @@ v1.3.5 安装时复制的 `libzstd.dll` 会记录 SHA-256；恢复官方文件�
 
 当前正式版优先保证 **正确性、兼容性和可恢复性**。
 
-Test2 / Test3 / Test4 曾测试文件级和 Chunk 级并行，但不同游戏的 Manifest、文件数量、Chunk 分布和 CDN 环境差异很大，因此这些实验参数**没有进入 v1.3.5 正式版**。正式版仍采用经过验证的保守串行路径。
+Test2 / Test3 / Test4 曾测试文件级和 Chunk 级并行，但不同游戏的 Manifest、文件数量、Chunk 分布和 CDN 环境差异很大，因此这些实验参数**没有进入 v1.3.6 正式版**。正式版仍采用经过验证的保守串行路径。
 
 与 Windows 8.1 上的官方下载器相比，Windows 7 下的 .NET 替代 downloader 在大文件重组、MD5 校验以及大量小 chunk / 小文件阶段仍可能更慢，短暂显示 `0 B/s` 不一定表示任务已经卡死。
 
@@ -154,7 +157,7 @@ Test2 / Test3 / Test4 曾测试文件级和 Chunk 级并行，但不同游戏的
 - [系统环境要求](docs/ENVIRONMENT.md)
 - [技术说明](docs/TECHNICAL.md)
 - [更新日志](CHANGELOG.md)
-- [v1.3.5 Release Notes](docs/releases/v1.3.5.md)
+- [v1.3.6 Release Notes](docs/releases/v1.3.6.md)
 - [历史 Release Notes / SHA-256](docs/releases/)
 - [第三方组件说明](docs/THIRD_PARTY_NOTICES.md)
 
