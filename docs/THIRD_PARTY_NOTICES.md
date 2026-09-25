@@ -3,17 +3,17 @@
 ## Zstandard / libzstd.dll
 
 - 项目：Zstandard
-- v1.3.5 使用版本：**1.5.6**
+- v1.3.5 起使用版本：**1.5.6**
 - 上游仓库：https://github.com/facebook/zstd
 - 版权所有：Meta Platforms, Inc. and affiliates，以及相关贡献者
 
-Zstandard 官方仓库采用 **BSD OR GPLv2** 双许可证。FeverGames Legacy Windows Downloader 的 v1.3.5 Release 对 `libzstd.dll` 选择 **BSD License** 条款进行再分发。
+Zstandard 官方仓库采用 **BSD OR GPLv2** 双许可证。FeverGames Legacy Windows Downloader 的 v1.3.6 Release 对 `libzstd.dll` 选择 **BSD License** 条款进行再分发。
 
 完整 BSD License 文本见：
 
 [`docs/third_party/Zstandard_v1.5.6_LICENSE.txt`](third_party/Zstandard_v1.5.6_LICENSE.txt)
 
-v1.3.5 正式 Release ZIP 中的二进制：
+v1.3.6 正式 Release ZIP 中的二进制：
 
 ```text
 File: core\tools\libzstd.dll
