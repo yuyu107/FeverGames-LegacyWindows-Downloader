@@ -1,30 +1,33 @@
-发烧游戏旧版 Windows 下载器 v1.3.6
+发烧游戏旧版 Windows 下载器 v1.3.7
 
-v1.3.6 的主要变化
+v1.3.7 的主要变化
 ------------------
-1. 新增 FeverGames 1.18.44.2 / layout A 的精确字节支持。
-2. 修复 Win7 / CLR 2.0 下收集 decoder_info.txt 时 SHA256Managed.Dispose() 不可用的问题。
-3. 延续 v1.3.5 的内置 libzstd.dll 1.5.6 方案，不需要另外安装 7-Zip。
-4. 正式版仍使用经过验证的串行下载 / 重组逻辑，不加入 Test2 / Test3 / Test4 的实验并发参数。
+1. 将实机测试中验证可用的 Index 下载优化与平衡型 Chunk / Build 管线整理为正式版。
+2. Manifest 会先完成解析，再进入 Index 状态，因此索引总大小可以在阶段开始时直接获得。
+3. Index 保持 Manifest 原始顺序，避免把大量小 Index 集中到下载尾段。
+4. Index 并发提高到 HDD 64 / SSD 96，并减少临时文件 I/O、热路径同步日志和重复 AES Key 探测。
+5. 主下载管线采用 HDD 8 + 6 + 1 / SSD 12 + 10 + 2。
+6. 新增实验性的 Auto Profile，用于未知前端布局的结构识别备用路径。
+7. 继续使用内置 libzstd.dll 1.5.6，不需要另外安装 7-Zip。
 
-1.18.44.2-A 实机验证
---------------------
-已在 Windows 7 SP1 x64 完成：
-- 前端 5 个补丁点全部命中；
-- managed downloadIPC 正常接管；
-- libzstd.dll 1.5.6 正常工作；
-- 3133 / 3133 文件完整下载成功；
-- 游戏能够正常启动；
-- 能够正常进入世界。
-
-兼容性
-------
-当前支持：
+当前已验证前端布局
+------------------
 - 1.18.42.12-A
 - 1.18.42.14-A
 - 1.18.42.14-B
 - 1.18.43.22-A
 - 1.18.44.2-A
+
+1.18.44.2-A 已在 Windows 7 SP1 x64 完成 5/5 前端补丁、managed downloadIPC 接管、libzstd 解压、完整游戏下载、启动并进入世界。
+
+关于 Auto Profile
+-----------------
+已知版本仍优先使用 Built-in Exact Profile。
+只有未知布局才会尝试 Auto Profile，而且必须全部目标通过结构与字节验证；
+任一目标不确定或不满足条件都会安全停止。
+
+当前没有真正更新后的 FeverGames 新版本可供实机验证，因此 Auto Profile 暂时不能视为未来版本兼容保证。
+后续出现新版本时应先测试；确认成功后再把对应布局固化为 Built-in Exact Profile。
 
 使用
 ----
@@ -40,12 +43,6 @@ decoder = libzstd.dll ... (in-process)
 rollback backup = COMPLETE
 RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
-安全机制
---------
-安装器仍采用精确 5 点字节匹配。
-如果 FeverGames 再次更新、二进制布局未知或目标字节发生变化，会安全停止，
-不会把旧版偏移强行写入新版本。
-
 恢复
 ----
 运行 03_恢复官方文件.cmd。
@@ -56,26 +53,24 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 运行 04_收集诊断.cmd。
 
 诊断目录：
-FeverGames_v1.3.6_Diagnostic_Result
+FeverGames_v1.3.7_Diagnostic_Result
 
-decoder_info.txt 会记录 libzstd.dll 的版本和 SHA-256。
-v1.3.6 已修复旧 CLR 环境下 SHA256Managed.Dispose() 导致这一项采集失败的问题。
+关于性能
+--------
+v1.3.7 正式采用经过测试后保留的并发方案。
+Index 阶段会优先减少 HTTP 往返和小文件固定开销，主下载阶段则采用平衡型 Chunk / Build 管线。
+不同游戏、CDN、磁盘和网络环境差异较大，因此实际速度仍可能变化；Win7 替代 downloader 不保证达到 Win10 / Win11 官方 downloader 的同等速度。
 
-关于官方下载器 1.18.44.2 的变化
-------------------------------
-1.18.44.2 官方 downloadIPC.exe 内部新增/调整了 QueueDownloader、连接池、
-smart IP pool 等网络调度实现，但本次实机验证表明 FeverGames 与 downloader
-之间现有的任务接口仍可由本项目的 managed downloader 正常处理。
+安全机制
+--------
+项目不会只根据版本文件夹名称盲目套用旧偏移。
+Built-in Exact Profile 和 Auto Profile 都必须完成全部目标验证；验证失败时会安全停止。
 
-关于性能实验
-------------
-Test2 / Test3 / Test4 测试过文件级和 Chunk 级并发。
-不同游戏的 Manifest、文件数量、Chunk 分布和网络环境差异较大，
-因此 v1.3.6 正式版不包含这些实验并发参数，继续使用更保守的串行路径。
+Release CMD 入口保持无 BOM + CRLF，以兼容 Windows 7 cmd.exe。
 
 第三方组件
 ----------
-v1.3.6 使用 Zstandard 1.5.6 的 libzstd.dll。
+v1.3.7 使用 Zstandard 1.5.6 的 libzstd.dll。
 正式包按 Zstandard 的 BSD License 条款再分发。
 
 详见：

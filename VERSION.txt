@@ -1,27 +1,29 @@
 FeverGames Legacy Windows Downloader
-Version: 1.3.6
+Version: 1.3.7
 Release status: Stable
 Verified FeverGames frontend builds/layouts: 1.18.42.12 / layout A, 1.18.42.14 / layout A, 1.18.42.14 / layout B, 1.18.43.22 / layout A, 1.18.44.2 / layout A
+
+v1.3.7:
+- Promoted the tested Index-stage and balanced Chunk/Build pipeline optimizations into the stable release.
+- Parse Manifest before entering the Index state so the Index total size is known immediately.
+- Keep Index requests in Manifest order to avoid a low-throughput tail caused by sorting by final file size.
+- Index concurrency: HDD 64 / SSD 96, with a higher HTTP connection limit.
+- Keep Index decrypt/decode/parse in memory through AES-CTR -> libzstd -> Protobuf, with reduced hot-path logging and AES-key probing.
+- Main pipeline: HDD 8 + 6 + 1, SSD 12 + 10 + 2.
+- Added an experimental Auto Profile structural-detection fallback for unknown frontend layouts.
+- Auto Profile requires full structural/byte validation and stops safely on failure.
+- Auto Profile has not yet been validated on a genuinely newer FeverGames release and is not a guarantee of future-version compatibility.
 
 v1.3.6:
 - Added exact-byte support for FeverGames 1.18.44.2 / layout A.
 - Verified 1.18.44.2-A on Windows 7 SP1 x64: patch install, 3133/3133 full game download, game launch and world entry.
 - Fixed decoder_info.txt SHA-256 collection on Win7 / CLR 2.0 by replacing SHA256Managed.Dispose() with Clear().
-- Kept the v1.3.5 in-process libzstd.dll 1.5.6 backend.
-- Kept the established serial download/rebuild path; Test2/Test3/Test4 concurrency experiments remain excluded.
 
 v1.3.5:
 - Replaced the external 7-Zip / zstd.exe Zstandard path with in-process libzstd.dll 1.5.6 via P/Invoke.
 - Windows 7 users no longer need to install 7-Zip when using the Release ZIP.
-- Standalone libzstd streaming decode passed on Windows 7 SP1 x64 under CLR 2.0.
-- Status and diagnostics report the libzstd backend; restore removes the patch-supplied DLL only when its recorded SHA-256 is unchanged.
-- Experimental file/chunk concurrency from Test2/Test3/Test4 is intentionally not included in the stable build.
-
-v1.3.4:
-- Added exact-byte support for FeverGames 1.18.43.22 / layout A.
-- 1.18.43.22-A completed patch install, full download and successful game launch on Windows 7 SP1 x64.
 
 Safety:
-- Every frontend profile requires exact matching of all five target locations.
-- Unknown or changed layouts stop safely instead of reusing offsets blindly.
+- Known layouts use Built-in Exact Profiles and require exact matching of all five target locations.
+- Unknown layouts may use experimental Auto Profile only when all required structural and byte checks pass.
 - Release CMD wrappers use BOM-less ASCII with CRLF line endings for Windows 7 cmd.exe compatibility.

@@ -1,6 +1,29 @@
 # 更新日志
 
 
+## v1.3.7
+
+下载体验优化与实验性新版识别更新。
+
+- 将最后一轮测试中验证可用的下载优化整理为正式版；
+- Manifest 先完成解析，再进入 Index 状态，索引总大小可在阶段开始时直接获得；
+- Index 保持 Manifest 原始顺序，避免按最终文件大小排序后把大量小 Index 集中到尾段；
+- Index 并发提高到 HDD 64 / SSD 96，并同步提高 HTTP 连接上限；
+- Index 使用进程内 `AES-CTR -> libzstd -> Protobuf` 路径，减少临时文件 I/O、热路径同步日志和重复 AES Key 探测；
+- 主下载正式采用平衡型 Chunk / Build 管线：HDD `8 + 6 + 1`，SSD `12 + 10 + 2`；
+- 保留 `libzstd.dll 1.5.6` 进程内 Zstandard 解压；
+- 已知版本继续优先使用 Built-in Exact Profile；
+- 新增实验性的 Auto Profile 结构识别备用路径：未知布局只有全部目标通过结构与字节验证时才允许继续，否则安全停止；
+- Auto Profile 当前尚无真正更新后的 FeverGames 版本可供实机验证，因此不视为未来版本兼容保证；
+- 继续支持 1.18.42.12-A、1.18.42.14-A/B、1.18.43.22-A、1.18.44.2-A；
+- Release CMD 继续保持无 BOM + CRLF，避免 Windows 7 `cmd.exe` 解析异常。
+
+正式包 SHA-256：
+
+```text
+2f18dd4b8dbe1ccda56f9c1d4308b2ee031a35fce4bed0160d8899e80628ec86
+```
+
 ## v1.3.6
 
 新增 FeverGames `1.18.44.2 / layout A` 正式支持，并修复 Win7 / CLR 2.0 下诊断 SHA-256 收集兼容问题。

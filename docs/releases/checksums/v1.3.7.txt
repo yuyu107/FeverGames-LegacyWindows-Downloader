@@ -1,0 +1,2 @@
+2f18dd4b8dbe1ccda56f9c1d4308b2ee031a35fce4bed0160d8899e80628ec86  FeverGames_LegacyWindows_Downloader_v1.3.7.zip
+4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1  libzstd.dll

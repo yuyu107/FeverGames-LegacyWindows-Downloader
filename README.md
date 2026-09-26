@@ -4,13 +4,13 @@
 
 这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复 **发烧游戏（FeverGames）新版游戏下载后端** 在旧系统上的运行能力。
 
-当前正式版：**v1.3.6**
+当前正式版：**v1.3.7**
 
-- [下载最新正式版](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.6)
+- [下载最新正式版](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.7)
 - [查看更新日志](CHANGELOG.md)
-- [查看 v1.3.6 Release Notes](docs/releases/v1.3.6.md)
+- [查看 v1.3.7 Release Notes](docs/releases/v1.3.7.md)
 
-v1.3.6 新增 **FeverGames 1.18.44.2 / layout A** 精确支持，并修复 Win7 / CLR 2.0 下 `decoder_info.txt` 的 SHA-256 诊断采集兼容问题。下载核心继续沿用 v1.3.5 已验证的进程内 `libzstd.dll 1.5.6` + 串行下载 / 重组路径。
+v1.3.7 将实机测试中验证可用的 **Index 下载优化、平衡型 Chunk / Build 管线**整理为正式版，并加入实验性的 **Auto Profile** 结构识别备用路径。已知版本仍优先使用 Built-in Exact Profile；Auto Profile 尚未经过真正未来新版 FeverGames 的实机验证。
 
 > [!IMPORTANT]
 > 本项目解决的是 **发烧游戏平台的游戏下载流程兼容**，不是游戏本体的 Windows 7 运行兼容。
@@ -23,10 +23,12 @@ v1.3.6 新增 **FeverGames 1.18.44.2 / layout A** 精确支持，并修复 Win7 
 
 本项目通过：
 
-- 对已验证的 `FeverGamesInstaller.exe` 前端布局进行精确字节匹配与兼容修补；
+- 对已验证的 `FeverGamesInstaller.exe` 前端布局进行 5 点精确字节匹配与兼容修补；
+- 对未收录的新布局提供实验性的 Auto Profile 结构识别备用路径，只有全部目标通过验证才允许继续；
 - 使用 Windows 7 可运行的 .NET `downloadIPC.exe` 替代原版新下载后端；
-- 在 v1.3.5 中改为进程内调用 **libzstd.dll 1.5.6** 解压 Zstandard 数据；
-- 保留下载任务所需的 Manifest、Index、Chunk、文件重组和校验流程；
+- 进程内调用 **libzstd.dll 1.5.6** 解压 Zstandard 数据；
+- 保留 Manifest、Index、Chunk、文件重组和最终校验流程；
+- 在 v1.3.7 中优化 Index 阶段和 Chunk / Build 下载管线；
 - 提供安装、状态检查、官方文件恢复和诊断入口；
 
 让受支持的 FeverGames 版本可以继续在 Windows 7 上完成游戏下载。
@@ -41,11 +43,12 @@ v1.3.6 新增 **FeverGames 1.18.44.2 / layout A** 精确支持，并修复 Win7 
 | FeverGames 1.18.42.14 / layout B | ✅ 已验证 |
 | FeverGames 1.18.43.22 / layout A | ✅ 已验证完整下载并进入游戏 |
 | FeverGames 1.18.44.2 / layout A | ✅ 已验证完整下载、启动并进入世界 |
+| 未知未来版本 / 未知布局 | ⚠️ 实验性 Auto Profile；尚未经过真正新版实机验证 |
 | Windows 8.1 | ℹ️ 官方新版 downloader 当前可直接使用，通常无需本项目 |
 | Windows 10 / 11 | ℹ️ 不属于本项目目标，应优先使用官方程序 |
 
 > [!NOTE]
-> FeverGames 的**版本文件夹名称不能单独代表二进制布局**。同一个版本号可能出现不同布局，因此安装器会检查 5 个目标位置是否与已知 profile 完整匹配；未知或发生变化的布局会安全停止，不会强行修改。
+> FeverGames 的**版本文件夹名称不能单独代表二进制布局**。已知版本优先使用 Built-in Exact Profile 并检查 5 个目标位置；没有已知 profile 时才尝试实验性的 Auto Profile。只有全部目标通过结构与字节验证才会继续，否则安全停止。
 
 更完整的测试记录见：[兼容性记录](docs/COMPATIBILITY.md)。
 
@@ -53,7 +56,7 @@ v1.3.6 新增 **FeverGames 1.18.44.2 / layout A** 精确支持，并修复 Win7 
 
 普通用户建议直接下载 Release ZIP：
 
-**[FeverGames Legacy Windows Downloader v1.3.6](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.6)**
+**[FeverGames Legacy Windows Downloader v1.3.7](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.3.7)**
 
 解压后会看到：
 
@@ -71,21 +74,11 @@ core\
 1. 正常安装 / 更新 FeverGames；
 2. **完整解压 Release ZIP**，不要直接在压缩包里运行 CMD；
 3. **完全退出发烧游戏平台**；
-4. 运行：
+4. 运行 `01_一键安装.cmd`。
 
-```text
-01_一键安装.cmd
-```
+Release ZIP 已经自带 `libzstd.dll 1.5.6`，**不需要另外安装 7-Zip 或 zstd.exe**。
 
-v1.3.6 Release ZIP 已经自带 `libzstd.dll`，**不再要求用户另外安装 7-Zip 或 zstd.exe**。
-
-安装完成后可运行：
-
-```text
-02_检查状态.cmd
-```
-
-正常结果应包含：
+安装完成后可运行 `02_检查状态.cmd`。正常结果应包含：
 
 ```text
 Frontend patch count: 5/5
@@ -95,23 +88,11 @@ rollback backup = COMPLETE
 RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 ```
 
-如果需要恢复 FeverGames 官方文件：
-
-```text
-03_恢复官方文件.cmd
-```
-
-如果遇到问题：
-
-```text
-04_收集诊断.cmd
-```
+需要恢复 FeverGames 官方文件时运行 `03_恢复官方文件.cmd`；遇到问题时运行 `04_收集诊断.cmd`。
 
 ## 系统环境要求
 
-推荐使用接近原版的 **Windows 7 SP1 x64**。
-
-安装器需要系统保留：
+推荐使用接近原版的 **Windows 7 SP1 x64**。安装器需要系统保留：
 
 - `cmd.exe`
 - `powershell.exe`
@@ -121,34 +102,32 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
 **不再要求安装 7-Zip。** Release ZIP 中已经包含 Win7 实机验证过的 `libzstd.dll 1.5.6 x64`。
 
-深度精简版 / Ghost / 魔改 Windows 7 如果删除了 PowerShell、.NET 编译器、UAC 或其它基础组件，安装器可能无法正常运行。
-
-详细说明见：[系统环境要求](docs/ENVIRONMENT.md)。
+深度精简版 / Ghost / 魔改 Windows 7 如果删除了 PowerShell、.NET 编译器、UAC 或其它基础组件，安装器可能无法正常运行。详细说明见：[系统环境要求](docs/ENVIRONMENT.md)。
 
 ## 安全与回滚
 
 项目不会只根据 FeverGames 版本号直接修改文件。
 
-安装前会先确认目标文件与已知补丁布局匹配，并为官方文件建立 rollback backup。如果安装后的验证失败，安装流程会尽量自动回滚。
+已知布局优先使用 Built-in Exact Profile；未知布局只会进入实验性 Auto Profile 结构识别。无论走哪条路径，都必须完成全部目标验证，失败时会安全停止。安装前会为官方文件建立 rollback backup；安装后的验证失败时也会尽量自动回滚。
 
-v1.3.6 安装时复制的 `libzstd.dll` 会记录 SHA-256；恢复官方文件时，只有在该 DLL 仍与安装时记录一致的情况下才会删除，避免误删用户后来替换的文件。
+安装时复制的 `libzstd.dll` 会记录 SHA-256；恢复官方文件时，只有在该 DLL 仍与安装时记录一致的情况下才会删除，避免误删用户后来替换的文件。
 
-项目不实现：
+> [!WARNING]
+> Auto Profile 是面向未来未知布局的备用机制，目前没有真正更新后的 FeverGames 版本可供验证，因此**不能视为对未来版本兼容性的保证**。新版本出现后应先实测，确认后再将布局固化为 Built-in Exact Profile。
 
-- 账号登录绕过；
-- 内容授权绕过；
-- 游戏文件分发；
-- 账号密码收集。
+项目不实现账号登录绕过、内容授权绕过或游戏文件分发。公开 Issue、日志和诊断信息中请不要上传 PRIVATE Manifest response、AES key、Token / Cookie、deviceId / uid、sig / secKey 等账号或临时鉴权信息。
 
-公开 Issue、日志和诊断信息中请不要上传 PRIVATE Manifest response、AES key、Token / Cookie、deviceId / uid、sig / secKey 等账号或临时鉴权信息。
+## v1.3.7 性能说明
 
-## 性能说明
+v1.3.7 将此前测试版中验证较稳定的下载优化整理进正式版：
 
-当前正式版优先保证 **正确性、兼容性和可恢复性**。
+- Manifest 先完成解析，再进入 Index 状态，因此索引总大小可以在阶段开始时直接获得；
+- Index 保持 Manifest 原始顺序，避免按最终文件大小排序后把大量小 Index 集中到尾段；
+- Index 并发：HDD 64 worker / SSD 96 worker，并提高 HTTP 连接上限；
+- Index 使用内存中的 `AES-CTR -> libzstd -> Protobuf` 路径，减少临时文件 I/O、同步日志和重复 AES Key 探测；
+- 主下载采用平衡型 Chunk / Build 管线：HDD `8 + 6 + 1`，SSD `12 + 10 + 2`。
 
-Test2 / Test3 / Test4 曾测试文件级和 Chunk 级并行，但不同游戏的 Manifest、文件数量、Chunk 分布和 CDN 环境差异很大，因此这些实验参数**没有进入 v1.3.6 正式版**。正式版仍采用经过验证的保守串行路径。
-
-与 Windows 8.1 上的官方下载器相比，Windows 7 下的 .NET 替代 downloader 在大文件重组、MD5 校验以及大量小 chunk / 小文件阶段仍可能更慢，短暂显示 `0 B/s` 不一定表示任务已经卡死。
+不同游戏、CDN 节点、磁盘和网络环境仍可能产生明显速度差异。Windows 7 下的替代 downloader 不保证达到 Windows 10 / 11 官方 downloader 的同等吞吐。
 
 ## 文档
 
@@ -157,7 +136,7 @@ Test2 / Test3 / Test4 曾测试文件级和 Chunk 级并行，但不同游戏的
 - [系统环境要求](docs/ENVIRONMENT.md)
 - [技术说明](docs/TECHNICAL.md)
 - [更新日志](CHANGELOG.md)
-- [v1.3.6 Release Notes](docs/releases/v1.3.6.md)
+- [v1.3.7 Release Notes](docs/releases/v1.3.7.md)
 - [历史 Release Notes / SHA-256](docs/releases/)
 - [第三方组件说明](docs/THIRD_PARTY_NOTICES.md)
 

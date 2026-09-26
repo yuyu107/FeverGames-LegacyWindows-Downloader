@@ -4,16 +4,16 @@
 
 FeverGames Legacy Windows Downloader 由两部分组成：
 
-1. 对已知 `FeverGamesInstaller.exe` 布局进行 5 点 exact-byte 兼容补丁；
+1. 对已知 `FeverGamesInstaller.exe` 布局进行 5 点 exact-byte 兼容补丁，并为未知布局提供实验性的 Auto Profile 结构识别备用路径；
 2. 用 Windows 7 可运行的托管 `downloadIPC.exe` 替代官方下载后端。
 
-当前正式版：**v1.3.6**。
+当前正式版：**v1.3.7**。
 
 ## 前端补丁
 
 安装器不会只根据版本目录名称直接写入固定偏移。
 
-每个已知 profile 都包含 5 个目标位置：
+每个已知 Built-in Exact Profile 都包含 5 个目标位置：
 
 - Gate A
 - Gate B
@@ -21,57 +21,52 @@ FeverGames Legacy Windows Downloader 由两部分组成：
 - `download_check` minor
 - `downloadIPC --sysVer` getter
 
-每个目标位置都保存：
+每个目标位置保存 offset、original bytes、patched bytes，并在必要时保存 alternate-before bytes。已知 profile 只有在 5 个位置全部处于可接受状态时才会继续。
 
-- offset；
-- original bytes；
-- patched bytes；
-- 必要时的 alternate-before bytes。
+### v1.3.7 Auto Profile
 
-只有一个 profile 的 5 个位置全部处于已知状态时才会继续。未知布局会安全停止。
+如果没有 Built-in Exact Profile 能匹配当前二进制，v1.3.7 可以进入实验性的 Auto Profile 结构识别路径。它的原则是：
+
+- 不根据版本文件夹名称直接复用旧偏移；
+- 通过周围结构、控制流和目标字节寻找候选位置；
+- 5 个目标必须全部通过验证；
+- 任一候选不唯一、不确定或字节状态异常都会安全停止。
+
+当前没有真正更新后的 FeverGames 新版本可供测试，因此 Auto Profile 只能视为备用能力，不能视为已验证的未来版本兼容。新布局实测成功后，应固化为新的 Built-in Exact Profile。
 
 ## downloader 架构
 
-替代 downloader 是 C# / .NET 托管程序。
-
-源码仓库保存 gzip + Base64 形式的完整 C# 源：
+替代 downloader 是 C# / .NET 托管程序。源码仓库保存 gzip + Base64 形式的完整 C# 源：
 
 ```text
 src/downloadIPC_Win7_v1.2.cs.gz.b64
 ```
 
-`scripts/current/Prepare_Source_v1.2.ps1` 会在源码 checkout 中还原：
-
-```text
-scripts/current/downloadIPC_Win7_v1.2.cs
-```
-
-随后使用目标 Win7 系统已有的 `csc.exe` 编译为 x64 managed EXE。
+`scripts/current/Prepare_Source_v1.2.ps1` 会在源码 checkout 中还原 `scripts/current/downloadIPC_Win7_v1.2.cs`，随后使用目标 Win7 系统已有的 `csc.exe` 编译为 x64 managed EXE。
 
 ## 下载流程
 
-当前稳定路径大致为：
+v1.3.7 的稳定路径大致为：
 
 ```text
 FeverGames task
-  -> Manifest
-  -> Index HTTP
-  -> Index decrypt
-  -> Index Zstd decode
-  -> parse Chunk metadata
-  -> Chunk HTTP
-  -> Chunk decrypt
-  -> Chunk Zstd decode
+  -> Manifest HTTP
+  -> parse Manifest / compute Index total
+  -> enter Index state
+  -> concurrent Index HTTP
+  -> AES-CTR decrypt
+  -> in-process libzstd decode
+  -> Protobuf / Chunk metadata
+  -> balanced Chunk HTTP pipeline
+  -> Chunk decrypt / Zstd decode
   -> SumBuf / file reconstruction
   -> MD5
   -> final file
 ```
 
-## v1.3.5：进程内 libzstd
+## 进程内 libzstd
 
-v1.3.4 及更早版本的稳定 downloader 使用外部 `7z.exe` / `zstd.exe` 完成 Zstandard 解压。
-
-v1.3.5 改为：
+v1.3.5 起改为：
 
 ```text
 managed downloadIPC.exe
@@ -82,36 +77,34 @@ managed downloadIPC.exe
   -> ZSTD_decompressStream
 ```
 
-使用到的主要导出包括：
-
-- `ZSTD_versionString`
-- `ZSTD_createDStream`
-- `ZSTD_freeDStream`
-- `ZSTD_initDStream`
-- `ZSTD_decompressStream`
-- `ZSTD_DStreamInSize`
-- `ZSTD_DStreamOutSize`
-- `ZSTD_isError`
-- `ZSTD_getErrorName`
-
 Windows 7 SP1 x64 + CLR 2.0 的独立流式解压测试已经通过，随后在实际 FeverGames 下载中验证完成。
 
-## 为什么正式版没有采用 Test2 / Test3 / Test4 的并发参数？
+## v1.3.7：Index 调度
 
-性能测试发现，大量小文件时，主要等待可以来自串行的 Index HTTP + Chunk HTTP 往返；文件级并行能显著改善特定游戏。
+此前测试曾出现两个与 Windows 10 / 11 官方 downloader 行为明显不同的问题：Index 阶段刚出现时总大小为 0，以及按最终文件 StageSize 排序后，大 Index 集中在前面、小 Index 集中在尾段。
 
-大文件内部 Chunk 并行也能改善部分大文件，但不同游戏会有不同的：
+v1.3.7 调整为：
 
-- 文件数量；
-- 文件大小分布；
-- Chunk 数量与大小；
-- Chunk 共享关系；
-- CDN / 下载节点；
-- 磁盘性能。
+- 先完成 Manifest 解析并读取 `pb_size_v2`，再进入 Index 状态；
+- Index 阶段使用 Manifest 原始顺序；
+- Index 并发：HDD 64 / SSD 96；
+- HTTP connection limit 同步提高；
+- Index 数据尽量在内存中完成 AES-CTR、libzstd 和 Protobuf 处理；
+- AES Key 探测只读取必要头部并缓存成功 Key；
+- 正常热路径减少逐 Index 同步日志写入。
 
-因此把某一个游戏上效果较好的固定 `4 / 6 worker` 参数直接作为全局策略并不稳妥。
+这些修改改善了 Index 阶段的响应和尾段行为，但 Windows 7 替代实现仍可能比官方新系统 downloader 慢。
 
-v1.3.6 正式版继续保持已验证的串行下载调度；Test2 / Test3 / Test4 的固定并发参数仍未纳入正式版。
+## v1.3.7：平衡型 Chunk / Build 管线
+
+正式版主下载采用经测试后保留的平衡参数：
+
+```text
+HDD: large chunk workers = 8, small chunk workers = 6, build workers = 1
+SSD: large chunk workers = 12, small chunk workers = 10, build workers = 2
+```
+
+Index 完成后，主下载计划仍可按适合 Chunk / Build 的顺序组织，因此 Index 的 Manifest 顺序不会强制改变后续文件构建策略。
 
 ## v1.3.6：FeverGames 1.18.44.2-A
 
@@ -126,11 +119,7 @@ NetMinor : 0xA60652
 Getter   : 0xA61CA0
 ```
 
-Gate B 的直接控制流已确认是 `CALL GateA -> TEST AL,AL -> JNE +0xD6`；NetLabel 的 RIP-relative 目标从实际字符串 `windows 7` 调整到 `windows 8.1`。
-
 Windows 7 SP1 x64 实机验证结果：5/5 补丁成功、3133/3133 文件完整下载、游戏成功启动并进入世界。
-
-官方 1.18.44.2 `downloadIPC.exe` 内部出现 QueueDownloader、client pool、smart IP pool 等新调度符号，但实机结果表明 FeverGames 与 downloader 之间现有外部任务接口仍可由本项目 managed downloader 正常处理。
 
 ## 状态检查
 
@@ -153,37 +142,14 @@ RESULT=READY_FOR_WIN7_FEVERGAMES_DOWNLOAD
 
 ## 回滚
 
-安装前会保存官方：
-
-```text
-FeverGamesInstaller.exe.original
-downloadIPC.exe.original
-```
-
-如果安装器从工具包复制了 `libzstd.dll`，会额外记录：
-
-```text
-copied_libzstd.sha256
-```
-
-恢复时只有当前 DLL SHA-256 与记录一致才会删除该 DLL；用户后来替换过的 DLL 会被保留。
+安装前会保存官方 `FeverGamesInstaller.exe.original` 和 `downloadIPC.exe.original`。如果安装器复制了 `libzstd.dll`，会记录 `copied_libzstd.sha256`；恢复时只有当前 DLL SHA-256 与记录一致才会删除该 DLL。
 
 ## 诊断
 
-v1.3.5 诊断结果新增：
-
-```text
-decoder_info.txt
-```
-
-其中记录目标版本目录中的 `libzstd.dll` 路径、版本和 SHA-256。
-
-v1.3.6 修复 Win7 / CLR 2.0 下 `SHA256Managed.Dispose()` 不可用导致的诊断收集错误，改用旧 CLR 兼容的 `Clear()`。
+诊断会记录 downloader / decoder 状态、下载阶段以及性能相关信息。v1.3.6 已修复旧 CLR 下 `decoder_info.txt` 的 SHA-256 采集兼容问题。
 
 诊断不会主动收集 PRIVATE Manifest response、AES key、deviceId、uid、sig、secKey 等敏感鉴权数据。
 
 ## 第三方组件
 
-正式 Release ZIP 包含 Zstandard 1.5.6 的 `libzstd.dll`，按 BSD License 条款再分发。
-
-见：[第三方组件说明](THIRD_PARTY_NOTICES.md)。
+正式 Release ZIP 包含 Zstandard 1.5.6 的 `libzstd.dll`，按 BSD License 条款再分发。见：[第三方组件说明](THIRD_PARTY_NOTICES.md)。
