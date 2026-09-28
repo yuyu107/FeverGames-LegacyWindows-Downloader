@@ -2,7 +2,8 @@
 
 ## v1.4.0
 
-- 新增独立下载器：匿名解析 App ID / Content ID / 最新 `version_code`，完成 Manifest / Index / Chunk / Build 下载链。
+- 新增独立下载器，主要作为 **FeverGames 前端新版布局无法安全修补时的备用方案**；不依赖 `FeverGamesInstaller.exe` 前端补丁，也不要求先由官方客户端创建下载任务。
+- 可匿名解析 App ID / Content ID / 最新 `version_code`，完成 Manifest / Index / Chunk / Build 下载链。
 - 新增已安装游戏更新检查、增量更新以及校验 / 修复。
 - 新增中文实时进度条与安装目录确认 / 返回修改流程。
 - 新增下载完成后自动登记到 FeverGames。
