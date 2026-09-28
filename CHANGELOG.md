@@ -1,5 +1,26 @@
 # 更新日志
 
+## v1.4.0
+
+- 新增独立下载器：匿名解析 App ID / Content ID / 最新 `version_code`，完成 Manifest / Index / Chunk / Build 下载链。
+- 新增已安装游戏更新检查、增量更新以及校验 / 修复。
+- 新增中文实时进度条与安装目录确认 / 返回修改流程。
+- 新增下载完成后自动登记到 FeverGames。
+- 新增 `06_仅修补downloadIPC.cmd`：不修改 `FeverGamesInstaller.exe`，已实测恢复 FeverGames 平台内游戏修复。
+- 完整 `01_一键安装.cmd` 继续保留前端 Windows 7 限制绕过，并安装当前 Win7 downloader。
+- Index 调度调整为 HDD 24 / SSD 32；最后 64 个 Index 使用 Tail Recovery（4 workers、Keep-Alive=false、10 秒超时、3 次重试）。
+- 修复完整补丁模式 `packageRoot` 未初始化导致的空 Path 错误。
+- 修复从 `06_仅修补downloadIPC.cmd` 状态升级到完整补丁时无法识别 `FGWin7_Backup\downloadIPC.exe.original` 的问题。
+- Release ZIP 调整中文 Windows 7 Explorer 文件名兼容方式，并使用短目录 / 文件名降低部分压缩包启发式误报。
+- 已知限制：05 独立下载器不支持由 FeverGames 使用 Aria2 / 经典下载方式处理的游戏；这类游戏请使用平台原生下载。
+
+正式包 SHA-256：
+
+```text
+3894648a653094c5b2083e049929877c4f9d287e9a85079461f4b4247a68e31a
+```
+
+
 
 ## v1.3.7
 
