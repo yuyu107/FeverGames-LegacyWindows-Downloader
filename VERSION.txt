@@ -1,29 +1,18 @@
 FeverGames Legacy Windows Downloader
-Version: 1.3.7
+Version: 1.4.0
 Release status: Stable
-Verified FeverGames frontend builds/layouts: 1.18.42.12 / layout A, 1.18.42.14 / layout A, 1.18.42.14 / layout B, 1.18.43.22 / layout A, 1.18.44.2 / layout A
+Target OS: Windows 7 SP1 x64
 
-v1.3.7:
-- Promoted the tested Index-stage and balanced Chunk/Build pipeline optimizations into the stable release.
-- Parse Manifest before entering the Index state so the Index total size is known immediately.
-- Keep Index requests in Manifest order to avoid a low-throughput tail caused by sorting by final file size.
-- Index concurrency: HDD 64 / SSD 96, with a higher HTTP connection limit.
-- Keep Index decrypt/decode/parse in memory through AES-CTR -> libzstd -> Protobuf, with reduced hot-path logging and AES-key probing.
-- Main pipeline: HDD 8 + 6 + 1, SSD 12 + 10 + 2.
-- Added an experimental Auto Profile structural-detection fallback for unknown frontend layouts.
-- Auto Profile requires full structural/byte validation and stops safely on failure.
-- Auto Profile has not yet been validated on a genuinely newer FeverGames release and is not a guarantee of future-version compatibility.
+v1.4.0 highlights:
+- Standalone anonymous latest-build resolver and downloader.
+- Installed-game update check, incremental update and repair.
+- downloadIPC-only patch mode.
+- Index Tail Recovery for the final 64 Index requests.
+- Existing exact-byte frontend patch and Auto Profile validation retained.
+- Aria2/classic-download games remain on the official FeverGames download path.
 
-v1.3.6:
-- Added exact-byte support for FeverGames 1.18.44.2 / layout A.
-- Verified 1.18.44.2-A on Windows 7 SP1 x64: patch install, 3133/3133 full game download, game launch and world entry.
-- Fixed decoder_info.txt SHA-256 collection on Win7 / CLR 2.0 by replacing SHA256Managed.Dispose() with Clear().
+Release ZIP SHA-256:
+3894648a653094c5b2083e049929877c4f9d287e9a85079461f4b4247a68e31a
 
-v1.3.5:
-- Replaced the external 7-Zip / zstd.exe Zstandard path with in-process libzstd.dll 1.5.6 via P/Invoke.
-- Windows 7 users no longer need to install 7-Zip when using the Release ZIP.
-
-Safety:
-- Known layouts use Built-in Exact Profiles and require exact matching of all five target locations.
-- Unknown layouts may use experimental Auto Profile only when all required structural and byte checks pass.
-- Release CMD wrappers use BOM-less ASCII with CRLF line endings for Windows 7 cmd.exe compatibility.
+libzstd.dll 1.5.6 SHA-256:
+4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1
