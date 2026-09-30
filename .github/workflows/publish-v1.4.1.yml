@@ -1,0 +1,31 @@
+name: Publish v1.4.1
+
+on:
+  push:
+    branches:
+      - release-v1.4.1
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release
+        run: |
+          python3 tools/build_v1.4.1_release.py
+          sha256sum dist/FGWin7_v1.4.1.zip
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.1 \
+            dist/FGWin7_v1.4.1.zip \
+            dist/FGWin7_v1.4.1.sha256.txt \
+            --title "v1.4.1｜旧版 GZip 下载链兼容修复" \
+            --notes-file docs/releases/v1.4.1.md
