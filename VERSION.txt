@@ -9,10 +9,11 @@ v1.4.0 highlights:
 - downloadIPC-only patch mode.
 - Index Tail Recovery for the final 64 Index requests.
 - Existing exact-byte frontend patch and Auto Profile validation retained.
+- Legacy AES-CTR + GZip Index/Chunk compatibility verified with Identity V.
 - Aria2/classic-download games remain on the official FeverGames download path.
 
 Release ZIP SHA-256:
-3894648a653094c5b2083e049929877c4f9d287e9a85079461f4b4247a68e31a
+a235a628e3aee0d9c49201d9ac035519eb640f666f4bd46f5589a88653d8cdd4
 
 libzstd.dll 1.5.6 SHA-256:
 4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1
