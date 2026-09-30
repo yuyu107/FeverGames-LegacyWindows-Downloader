@@ -2,6 +2,7 @@
 
 ## v1.4.0
 
+- 新增旧版文件分发兼容：Legacy Index 支持 AES-CTR + GZip，Chunk 支持 AES-CTR 后自动识别 Zstd / GZip；已完成《第五人格》完整下载验证，并同步到 05 独立下载器与 06 / 平台内 downloadIPC 下载链。
 - 新增独立下载器，主要作为 **FeverGames 前端新版布局无法安全修补时的备用方案**；不依赖 `FeverGamesInstaller.exe` 前端补丁，也不要求先由官方客户端创建下载任务。
 - 可匿名解析 App ID / Content ID / 最新 `version_code`，完成 Manifest / Index / Chunk / Build 下载链。
 - 新增已安装游戏更新检查、增量更新以及校验 / 修复。
@@ -18,7 +19,7 @@
 正式包 SHA-256：
 
 ```text
-3894648a653094c5b2083e049929877c4f9d287e9a85079461f4b4247a68e31a
+a235a628e3aee0d9c49201d9ac035519eb640f666f4bd46f5589a88653d8cdd4
 ```
 
 
