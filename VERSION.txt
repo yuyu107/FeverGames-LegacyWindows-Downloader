@@ -1,19 +1,18 @@
 FeverGames Legacy Windows Downloader
-Version: 1.4.0
+Version: 1.4.1
 Release status: Stable
 Target OS: Windows 7 SP1 x64
 
-v1.4.0 highlights:
-- Standalone anonymous latest-build resolver and downloader.
-- Installed-game update check, incremental update and repair.
-- downloadIPC-only patch mode.
-- Index Tail Recovery for the final 64 Index requests.
-- Existing exact-byte frontend patch and Auto Profile validation retained.
-- Legacy AES-CTR + GZip Index/Chunk compatibility verified with Identity V.
+v1.4.1 highlights:
+- Legacy index_url / AES-CTR + GZip Index compatibility.
+- AES-decrypted Chunk auto-detection for Zstd / GZip.
+- Same compatibility path synced to standalone core.cs and patched downloadIPC ipc.cs.
+- Identity V full-download verification on Windows 7.
+- v1.4.0 standalone download/update/repair, Index Tail Recovery and frontend safety validation retained.
 - Aria2/classic-download games remain on the official FeverGames download path.
 
-Release ZIP SHA-256:
-a235a628e3aee0d9c49201d9ac035519eb640f666f4bd46f5589a88653d8cdd4
+Release assets are generated reproducibly by:
+tools/build_v1.4.1_release.py
 
 libzstd.dll 1.5.6 SHA-256:
 4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1
