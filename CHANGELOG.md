@@ -1,5 +1,17 @@
 # 更新日志
 
+## v1.4.1
+
+- 将已完成实机验证的旧版文件分发兼容从 v1.4.0 后续修订中独立为正式补丁版本。
+- Legacy Manifest / Index 支持 `index_url` / `pb_size` 与 AES-CTR + GZip Index 解码。
+- Chunk 在 AES-CTR 解密后自动识别 Zstd / GZip，不再强制所有数据块按 Zstd 解码。
+- 同步修复 05 独立下载器（`core.cs`）与 06 / FeverGames 平台内 downloadIPC（`ipc.cs`）两条下载链。
+- 保留未知 Chunk `first16` 诊断信息，便于后续扩展格式兼容。
+- 《第五人格》已完成完整下载实机验证：此前 439/439 Index 完成后会在 Chunk 阶段中途停止，v1.4.1 已修复。
+- 继续保留 v1.4.0 的独立下载、更新检查、增量更新、校验/修复、Index Tail Recovery 与前端安全补丁框架。
+
+正式包由 Release 工作流生成并附带 SHA-256 校验文件。
+
 ## v1.4.0
 
 - 新增旧版文件分发兼容：Legacy Index 支持 AES-CTR + GZip，Chunk 支持 AES-CTR 后自动识别 Zstd / GZip；已完成《第五人格》完整下载验证，并同步到 05 独立下载器与 06 / 平台内 downloadIPC 下载链。
