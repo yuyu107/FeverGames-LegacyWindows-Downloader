@@ -4,16 +4,16 @@
 
 这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复发烧游戏平台（FeverGames）的游戏下载、修复与更新链路。v1.4.0 新增的独立下载器主要作为 **FeverGames 前端无法安全修补时的备用方案**：当新版平台布局发生变化、完整补丁无法通过 Exact Profile / Auto Profile 验证时，仍可绕开发烧游戏平台前端，直接完成受支持游戏下载链。
 
-当前正式版：**v1.4.0**
+当前正式版：**v1.4.1**
 
-- [下载 v1.4.0](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.0)
+- [下载 v1.4.1](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.1)
 - [查看更新日志](CHANGELOG.md)
-- [查看 v1.4.0 Release Notes](docs/releases/v1.4.0.md)
+- [查看 v1.4.1 Release Notes](docs/releases/v1.4.1.md)
 
 > [!IMPORTANT]
 > 本项目解决的是 **FeverGames 下载流程兼容**。它不保证下载后的每个游戏本体都能在 Windows 7 上运行。
 
-## v1.4.0 主要功能
+## v1.4.1 主要功能
 
 Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 
@@ -59,7 +59,7 @@ Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 
 ## 旧版 Index / Chunk 兼容修复
 
-2026-09-30 的 v1.4.0 正式包已合入第五人格实机验证通过的兼容修复：
+v1.4.1 将第五人格实机验证通过的旧版文件分发兼容作为独立补丁版本正式发布：
 
 - 支持旧版 Index 的 AES-CTR + GZip；
 - Chunk 在 AES-CTR 解密后可自动识别 Zstd / GZip；
@@ -70,7 +70,7 @@ Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 
 ## Index Tail Recovery
 
-v1.4.0 针对部分环境 Index 下载到约 99% 后停滞 / 重新开始的问题调整为：
+v1.4.x 针对部分环境 Index 下载到约 99% 后停滞 / 重新开始的问题调整为：
 
 ```text
 普通 Index：
@@ -104,11 +104,7 @@ Retry = 3 次
 
 ## 源码
 
-v1.4.0 的精确 Release 源码快照保存在：
-
-```text
-src/v1.4.0/
-```
+v1.4.1 的发布构建脚本与源码说明保存在 `tools/build_v1.4.1_release.py` 与 `src/v1.4.1/`；其下载核心基于 v1.4.0 精确源码快照与 2026-09-30 已验证补丁可复现构建。
 
 源码快照排除了第三方 `libzstd.dll` 二进制；普通用户请使用 GitHub Release ZIP。
 
@@ -125,7 +121,7 @@ src/v1.4.0/
 - [系统环境要求](docs/ENVIRONMENT.md)
 - [技术说明](docs/TECHNICAL.md)
 - [更新日志](CHANGELOG.md)
-- [v1.4.0 Release Notes](docs/releases/v1.4.0.md)
+- [v1.4.1 Release Notes](docs/releases/v1.4.1.md)
 - [第三方组件说明](docs/THIRD_PARTY_NOTICES.md)
 
 ## License
