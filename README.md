@@ -41,7 +41,7 @@ Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 `05_独立下载_检查更新与修复.cmd` 支持：
 
 - 输入 App ID 后匿名获取游戏信息、Content ID 和最新版；
-- Manifest / Index / AES-CTR / Zstd / Protobuf / Chunk / Build / MD5；
+- Manifest / Index / AES-CTR / Zstd / **GZip** / Protobuf / Chunk / Build / MD5；
 - 默认安装目录与自定义目录；
 - 禁止直接选择磁盘根目录；
 - 选择目录后返回上一步重新修改；
@@ -56,6 +56,17 @@ Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 `06_仅修补downloadIPC.cmd` 不修改 `FeverGamesInstaller.exe`，只替换实际负责新版文件分发任务的 `downloadIPC.exe` 并配置 `libzstd.dll`。
 
 已实测可以恢复 FeverGames 平台内原本失败的“游戏修复”功能。
+
+## 旧版 Index / Chunk 兼容修复
+
+2026-09-30 的 v1.4.0 正式包已合入第五人格实机验证通过的兼容修复：
+
+- 支持旧版 Index 的 AES-CTR + GZip；
+- Chunk 在 AES-CTR 解密后可自动识别 Zstd / GZip；
+- 未知 Chunk 格式会记录解密后前 16 字节，便于后续兼容性诊断；
+- 修复已同时同步到 05 独立下载器与 06 / FeverGames 平台内 downloadIPC 下载链。
+
+该修复已完成《第五人格》完整下载验证。
 
 ## Index Tail Recovery
 
