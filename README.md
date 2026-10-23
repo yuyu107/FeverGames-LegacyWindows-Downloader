@@ -4,16 +4,16 @@
 
 这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复发烧游戏平台（FeverGames）的游戏下载、修复与更新链路。v1.4.0 新增的独立下载器主要作为 **FeverGames 前端无法安全修补时的备用方案**：当新版平台布局发生变化、完整补丁无法通过 Exact Profile / Auto Profile 验证时，仍可绕开发烧游戏平台前端，直接完成受支持游戏下载链。
 
-当前正式版：**v1.4.1**
+当前正式版：**v1.4.2**
 
-- [下载 v1.4.1](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.1)
+- [下载 v1.4.2](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.2)
 - [查看更新日志](CHANGELOG.md)
-- [查看 v1.4.1 Release Notes](docs/releases/v1.4.1.md)
+- [查看 v1.4.2 Release Notes](docs/releases/v1.4.2.md)
 
 > [!IMPORTANT]
 > 本项目解决的是 **FeverGames 下载流程兼容**。它不保证下载后的每个游戏本体都能在 Windows 7 上运行。
 
-## v1.4.1 主要功能
+## v1.4.2 主要功能
 
 Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 
@@ -56,6 +56,13 @@ Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
 `06_仅修补downloadIPC.cmd` 不修改 `FeverGamesInstaller.exe`，只替换实际负责新版文件分发任务的 `downloadIPC.exe` 并配置 `libzstd.dll`。
 
 已实测可以恢复 FeverGames 平台内原本失败的“游戏修复”功能。
+
+## v1.4.2 兼容更新
+
+- 新增已验证的 FeverGames 1.18.45.8 五点精确补丁；
+- 合入 Auto Profile v2，严格结构验证与文件校验不放宽；
+- 05 独立下载器继续使用基础 App ID 输入：直接回车默认为 `81`（我的世界基岩互通版），沿用原先的安装/更新检测/修复流程；
+- GamePicker 在线搜索、游戏列表与缓存功能暂不进入正式版，计划独立开发。
 
 ## 旧版 Index / Chunk 兼容修复
 
@@ -121,7 +128,7 @@ v1.4.1 的发布构建脚本与源码说明保存在 `tools/build_v1.4.1_release
 - [系统环境要求](docs/ENVIRONMENT.md)
 - [技术说明](docs/TECHNICAL.md)
 - [更新日志](CHANGELOG.md)
-- [v1.4.1 Release Notes](docs/releases/v1.4.1.md)
+- [v1.4.2 Release Notes](docs/releases/v1.4.2.md)
 - [第三方组件说明](docs/THIRD_PARTY_NOTICES.md)
 
 ## License
