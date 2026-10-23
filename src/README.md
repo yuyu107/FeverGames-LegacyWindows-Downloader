@@ -26,3 +26,8 @@ tools/build_v1.4.1_release.py
 ```
 
 The builder verifies the original v1.4.0 SHA-256 before applying the source delta, updates all package-visible version strings to v1.4.1, preserves the Windows 7-compatible ZIP Unicode-path layout, and emits the v1.4.1 ZIP plus SHA-256 file.
+
+
+## v1.4.2
+
+Stable release: `src/v1.4.2/` contains the fail-closed Auto Profile v2 scanner patch; `tools/build_v1.4.2_release.py` reproduces the package from the checked v1.4.1 Release ZIP, preserving the base App ID selector and verified GZip support.
