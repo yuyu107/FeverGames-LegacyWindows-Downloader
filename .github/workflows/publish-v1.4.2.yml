@@ -1,0 +1,20 @@
+name: Publish v1.4.2
+on:
+  push:
+    branches: [release-v1.4.2]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and verify
+        run: |
+          python3 tools/build_v1.4.2_release.py
+          cd dist && sha256sum -c FGWin7_v1.4.2.sha256.txt
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.4.2 dist/FGWin7_v1.4.2.zip dist/FGWin7_v1.4.2.sha256.txt --title "v1.4.2｜1.18.45.8 适配与 Auto Profile v2" --notes-file docs/releases/v1.4.2.md
