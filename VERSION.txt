@@ -1,9 +1,13 @@
 FeverGames Legacy Windows Downloader
-Version: 1.4.1
+Version: 1.4.2
 Release status: Stable
 Target OS: Windows 7 SP1 x64
 
-v1.4.1 highlights:
+v1.4.2 highlights:
+- FeverGames 1.18.45.8 exact-byte profile (SHA256 verified).
+- Auto Profile v2 structural scanner; fail-closed, unique candidate required.
+- Basic App ID selector restored; Enter defaults to App ID 81.
+- GamePicker online search/list not included.
 - Legacy index_url / AES-CTR + GZip Index compatibility.
 - AES-decrypted Chunk auto-detection for Zstd / GZip.
 - Same compatibility path synced to standalone core.cs and patched downloadIPC ipc.cs.
@@ -12,7 +16,10 @@ v1.4.1 highlights:
 - Aria2/classic-download games remain on the official FeverGames download path.
 
 Release assets are generated reproducibly by:
-tools/build_v1.4.1_release.py
+tools/build_v1.4.2_release.py
+
+Release ZIP SHA-256:
+13f2a473ed33af04a557dea4635daa5d7a9578c4699507d22c52cb00327ab01e
 
 libzstd.dll 1.5.6 SHA-256:
 4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1
