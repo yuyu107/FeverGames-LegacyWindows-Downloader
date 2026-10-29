@@ -1,0 +1,33 @@
+name: Validate historical compressed source
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/downloadIPC_Win7_v1.2.cs.gz.b64
+      - scripts/current/Prepare_Source_v1.2.ps1
+      - .github/workflows/check-legacy-source.yml
+  pull_request:
+    paths:
+      - src/downloadIPC_Win7_v1.2.cs.gz.b64
+      - scripts/current/Prepare_Source_v1.2.ps1
+      - .github/workflows/check-legacy-source.yml
+
+jobs:
+  validate-gzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Base64 and full GZip payload
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, pathlib
+          p = pathlib.Path('src/downloadIPC_Win7_v1.2.cs.gz.b64')
+          s = ''.join(p.read_text(encoding='ascii').split())
+          assert len(s) % 4 == 0, 'Base64 length is not a multiple of 4'
+          assert s.startswith('H4sI'), 'GZip Base64 header missing'
+          payload = base64.b64decode(s, validate=True)
+          data = gzip.decompress(payload)  # validates complete stream + CRC
+          assert len(data) > 1000, 'Decoded C# source unexpectedly short'
+          assert b'class ' in data or b'namespace ' in data, 'Decoded content is not plausible C# source'
+          print('OK: valid Base64 + GZip CRC; decompressed bytes:', len(data))
+          PY
