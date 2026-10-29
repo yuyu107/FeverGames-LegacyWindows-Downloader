@@ -2,6 +2,11 @@
 
 英文项目名：**FeverGames Legacy Windows Downloader**
 
+> [!CAUTION]
+> **普通用户请下载 [v1.4.2 正式版 ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.4.2/FGWin7_v1.4.2.zip)，不要点击 GitHub 的 Code → Download ZIP。**
+> 后者下载的是开发源码，包含 `.github`、`src`、`tools` 和历史源码编译脚本，不是可直接使用的正式安装包。
+> **正确压缩包名称：`FGWin7_v1.4.2.zip`**。解压后应看到 `01_一键安装.cmd`、`05_独立下载_检查更新与修复.cmd` 等中文入口。
+
 这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复发烧游戏平台（FeverGames）的游戏下载、修复与更新链路。v1.4.0 新增的独立下载器主要作为 **FeverGames 前端无法安全修补时的备用方案**：当新版平台布局发生变化、完整补丁无法通过 Exact Profile / Auto Profile 验证时，仍可绕开发烧游戏平台前端，直接完成受支持游戏下载链。
 
 当前正式版：**v1.4.2**
@@ -134,3 +139,7 @@ v1.4.1 的发布构建脚本与源码说明保存在 `tools/build_v1.4.1_release
 ## License
 
 项目自行编写的代码、脚本和文档采用 [MIT License](LICENSE)。Zstandard / libzstd 按其 BSD License 条款使用和再分发，详见第三方组件说明。
+
+## 源码 ZIP 与正式包的区别
+
+仓库根目录的 `01_Zero_Start_One_Click_Install.cmd` 是**历史源码引导脚本**，不代表当前 v1.4.2 发布包。误下载 GitHub `Code → Download ZIP` 的用户请改从 [Releases](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/latest) 下载。历史源码中的 Base64 压缩源文件已恢复到可解码版本；不建议用旧源码构建流程代替当前正式发布包。
