@@ -21,8 +21,16 @@ if (-not (Test-Path $packed)) {
 }
 
 try {
-    $b64 = (Get-Content $packed -Raw).Trim()
+    # Read all source lines without requiring PowerShell 3's -Raw parameter.
+    $b64 = [String]::Join("", [string[]](Get-Content -LiteralPath $packed))
+    $b64 = [System.Text.RegularExpressions.Regex]::Replace($b64, "\\s", "")
+    if (($b64.Length % 4) -ne 0 -or -not $b64.StartsWith("H4sI")) {
+        throw "Compressed source is corrupt (invalid Base64 length or GZip header). Re-download the repository or use the stable Release ZIP."
+    }
     [byte[]]$gz = [Convert]::FromBase64String($b64)
+    if ($gz.Length -lt 18 -or $gz[0] -ne 0x1F -or $gz[1] -ne 0x8B -or $gz[2] -ne 0x08) {
+        throw "Compressed source is not a valid GZip stream."
+    }
 
     $input = New-Object IO.MemoryStream(,$gz)
     $gzip = New-Object IO.Compression.GZipStream($input,[IO.Compression.CompressionMode]::Decompress)
