@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 使用说明与常见环境要求
+    url: https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/blob/main/docs/ENVIRONMENT.md
+    about: 了解平台补丁与 05 独立下载器的不同依赖。
+  - name: 反馈指南
+    url: https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/blob/main/docs/FEEDBACK.md
+    about: 查看状态检查、诊断摘要及提交前脱敏方法。

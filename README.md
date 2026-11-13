@@ -2,144 +2,91 @@
 
 英文项目名：**FeverGames Legacy Windows Downloader**
 
-> [!CAUTION]
-> **普通用户请下载 [v1.4.2 正式版 ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.4.2/FGWin7_v1.4.2.zip)，不要点击 GitHub 的 Code → Download ZIP。**
-> 后者下载的是开发源码，包含 `.github`、`src`、`tools` 和历史源码编译脚本，不是可直接使用的正式安装包。
-> **正确压缩包名称：`FGWin7_v1.4.2.zip`**。解压后应看到 `01_一键安装.cmd`、`05_独立下载_检查更新与修复.cmd` 等中文入口。
+这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复发烧游戏平台的游戏下载、更新和校验修复功能。项目同时处理前端系统版本检查与下载组件的兼容问题。
 
-这是一个面向 **Windows 7 SP1 x64** 的社区兼容项目，用于恢复发烧游戏平台（FeverGames）的游戏下载、修复与更新链路。v1.4.0 新增的独立下载器主要作为 **FeverGames 前端无法安全修补时的备用方案**：当新版平台布局发生变化、完整补丁无法通过 Exact Profile / Auto Profile 验证时，仍可绕开发烧游戏平台前端，直接完成受支持游戏下载链。
+当前正式版：**v1.5.0**。
 
-当前正式版：**v1.4.2**
+> **普通用户请下载 [v1.5.0 正式安装包](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.5.0/FGWin7_v1.5.0.zip)。**
+> GitHub 的 **Code → Download ZIP** 下载的是仓库源码，不是正式安装包。请完整解压后运行中文编号入口。
 
-- [下载 v1.4.2](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.2)
-- [查看更新日志](CHANGELOG.md)
-- [查看 v1.4.2 Release Notes](docs/releases/v1.4.2.md)
+- [Release 与附件](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.5.0)
+- [v1.5.0 更新说明](docs/releases/v1.5.0.md)
+- [使用说明](docs/使用说明.txt) · [环境要求](docs/ENVIRONMENT.md) · [兼容性记录](docs/COMPATIBILITY.md)
+- [反馈问题](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/issues/new/choose) · [反馈指南](docs/FEEDBACK.md)
 
-> [!IMPORTANT]
-> 本项目解决的是 **FeverGames 下载流程兼容**。它不保证下载后的每个游戏本体都能在 Windows 7 上运行。
+## 为什么需要这个项目
 
-## v1.4.2 主要功能
+在 Windows 7 上，平台前端可能在发起下载前根据系统版本阻止操作，官方下载组件也存在系统 API 兼容问题。仅修补其中一部分，不一定能恢复完整下载链路。
 
-Release ZIP 继续保留 v1.3.x 用户熟悉的中文编号入口：
+v1.5.0 对前端进行五点兼容修补，并让已验证的官方 Go 版 `downloadIPC.exe` 在 Win7 上工作，保留官方的下载、暂停恢复、断点保存和文件校验逻辑。此前的 C# 独立下载器继续作为 05 入口保留，用于受支持游戏的独立安装、更新和修复。
 
-```text
-01_一键安装.cmd
-02_检查状态.cmd
-03_恢复官方文件.cmd
-04_收集诊断.cmd
-05_独立下载_检查更新与修复.cmd
-06_仅修补downloadIPC.cmd
+本项目解决的是**平台下载兼容性**，不保证下载后的每个游戏本体都能在 Win7 上运行。
+
+## 快速使用
+
+1. 完全退出发烧游戏，包括托盘中的客户端及 `downloadIPC.exe`。
+2. 下载并完整解压 `FGWin7_v1.5.0.zip`，建议放在当前用户可写的文件夹。
+3. 运行 `01_一键安装.cmd`。自动识别目录、校验、备份并修补，无需输入 `INSTALL`。
+4. 安装成功后，正常打开平台下载、更新或修复游戏。
+
+目录和文件可写时直接执行；写入受限时才申请管理员权限。文件被占用也可能导致写入失败，请先退出平台。
+
+已经安装成功的 RC5 无需为了正式版先恢复或重装；重复运行会检查当前已修补状态。
+
+自动识别不到目录时，可以传入版本目录：
+
+```bat
+"01_一键安装.cmd" "D:\Program Files\FeverGames\1.18.45.8"
 ```
 
-### 01：完整补丁
+## 中文编号入口
 
-如果 FeverGames 在 Windows 7 上还没调用下载组件就因为系统版本检测阻止下载，运行 `01_一键安装.cmd`。
+| 入口 | 功能 |
+| --- | --- |
+| `00_Package_SelfCheck.cmd` | 安装包自检，可选运行 |
+| `01_一键安装.cmd` | 前端五点补丁与官方 Go 下载组件兼容修补 |
+| `02_检查状态.cmd` | 只读检查前端、下载组件与备份状态 |
+| `03_恢复官方文件.cmd` | 校验并恢复原版文件，输入 `RESTORE` 执行 |
+| `04_收集诊断.cmd` | 保存版本目录、两个 EXE 的哈希及备份存在状态 |
+| `05_独立下载_检查更新与修复.cmd` | 独立下载安装、更新和校验修复 |
+| `06_仅修补downloadIPC.cmd` | 仅修补官方 Go 下载组件，不修改前端 |
 
-完整补丁会对经过验证的 `FeverGamesInstaller.exe` 布局做精确字节修补，并安装当前 Win7 兼容 `downloadIPC.exe`。已知布局优先使用 Built-in Exact Profile；未知布局只有 Auto Profile 5/5 验证通过才会继续，否则安全停止。
+## 两条下载路径与依赖
 
-### 05：独立下载、检查更新与修复
+| 路径 | 实现与依赖 |
+| --- | --- |
+| 平台内下载（01/06 修补后） | 官方 Go 核心；安装器使用 WSH、MSXML3/6、ADODB.Stream、certutil，无需 PowerShell、Python 或 .NET 编译 |
+| 05 独立下载器 | 沿用 v1.4.2 的 PowerShell/C# 实现，需要 PowerShell、兼容的 .NET C# 编译器及包内 `app/libzstd.dll` |
 
-`05_独立下载_检查更新与修复.cmd` 的设计目的，是在 **FeverGames 平台本身无法安全修补，或新版本前端布局暂未适配** 时提供备用下载路径。它不依赖 `FeverGamesInstaller.exe` 的前端补丁，也不要求先由官方客户端创建下载任务。
+05 直接回车默认 App ID `81`（我的世界基岩互通版），支持自选安装目录、已有安装检测、更新和校验修复，保留 Zstd 与 Legacy AES-CTR + GZip 支持。首次运行会在 `app` 目录编译核心，请保持该目录可写。
 
-因此推荐顺序是：平台能够正常修补时优先使用 `01_一键安装.cmd` 恢复原生 FeverGames 下载体验；如果前端布局变化导致完整补丁拒绝安装，再使用 05 独立下载器作为兜底。
+部分 Aria2/经典分发游戏不适用于 05，请使用平台原生下载。05 尚未改为官方 Go 核心；在线游戏列表/搜索等 GamePicker 实验功能不包含在正式包中。
 
-`05_独立下载_检查更新与修复.cmd` 支持：
+## 自动识别范围
 
-- 输入 App ID 后匿名获取游戏信息、Content ID 和最新版；
-- Manifest / Index / AES-CTR / Zstd / **GZip** / Protobuf / Chunk / Build / MD5；
-- 默认安装目录与自定义目录；
-- 禁止直接选择磁盘根目录；
-- 选择目录后返回上一步重新修改；
-- 实时进度条；
-- 已安装游戏更新检查；
-- 增量更新；
-- 校验 / 修复当前安装；
-- 下载完成后登记到 FeverGames。
+前端内置精确配置：`1.18.42.12-A`、`1.18.42.14-A/B`、`1.18.43.22-A`、`1.18.44.2-A`、`1.18.45.8-A/B`。没有精确匹配时，只有通过 Auto Profile v2 的结构验证才允许修补。
 
-### 06：仅修补 downloadIPC.exe
+Go 组件支持已验证的 A/B/C 签名变体，以及程序主体哈希相同的其他签名变体。**重新编译、程序主体改变的新 Go 构建仍需适配**；当前没有通用 Go 结构迁移能力，不承诺所有未来版本自动兼容。
 
-`06_仅修补downloadIPC.cmd` 不修改 `FeverGamesInstaller.exe`，只替换实际负责新版文件分发任务的 `downloadIPC.exe` 并配置 `libzstd.dll`。
+内置旧前端配置不等于它们与新 Go 核心的全部组合都已重新实测。当前 v1.5.0 核心测试集中在 FeverGames `1.18.45.8`，详见[兼容性记录](docs/COMPATIBILITY.md)。
 
-已实测可以恢复 FeverGames 平台内原本失败的“游戏修复”功能。
+## 备份与恢复
 
-## v1.4.2 兼容更新
+原版文件保存在对应版本目录下的 `.FGWin7_150_Backup`。安装、恢复及失败回滚会核对文件哈希，兼容旧版已知备份位置。恢复成功后保留备份，再次安装可复用通过校验的原版备份。
 
-- 新增已验证的 FeverGames 1.18.45.8 五点精确补丁；
-- 合入 Auto Profile v2，严格结构验证与文件校验不放宽；
-- 05 独立下载器继续使用基础 App ID 输入：直接回车默认为 `81`（我的世界基岩互通版），沿用原先的安装/更新检测/修复流程；
-- GamePicker 在线搜索、游戏列表与缓存功能暂不进入正式版，计划独立开发。
+请保留备份。修改 EXE 后原有数字签名会失效；本包不分发网易官方完整 EXE。平台更新后若出现未知布局或 Go 构建，请通过 Issue 模板提交状态输出，不要跳过校验强行覆盖。
 
-## 旧版 Index / Chunk 兼容修复
+## 验证情况
 
-v1.4.1 将第五人格实机验证通过的旧版文件分发兼容作为独立补丁版本正式发布：
+官方 Go 方案已在 Win7 虚拟机完成完整下载、迅速暂停恢复、重启续传及校验修复；RC5 已在实体机 Win7 上修补并完成游戏下载。正式版沿用相同的核心补丁配置。
 
-- 支持旧版 Index 的 AES-CTR + GZip；
-- Chunk 在 AES-CTR 解密后可自动识别 Zstd / GZip；
-- 未知 Chunk 格式会记录解密后前 16 字节，便于后续兼容性诊断；
-- 修复已同时同步到 05 独立下载器与 06 / FeverGames 平台内 downloadIPC 下载链。
+正式包已通过离线字节、哈希和 ZIP 完整性检查；新增按需提权流程及最终组合尚未完成 Win7 实机回归。
 
-该修复已完成《第五人格》完整下载验证。
+## 源码与历史实现
 
-## Index Tail Recovery
+仓库根目录的英文 CMD、`scripts/current/` 及压缩源码快照主要保留早期实现，**不等同于 v1.5.0 正式安装入口**。v1.5.0 平台安装脚本为正式 ZIP 内的 `FG150_*.vbs/.cmd`。参见[源码索引](src/README.md)及[技术说明](docs/TECHNICAL.md)。
 
-v1.4.x 针对部分环境 Index 下载到约 99% 后停滞 / 重新开始的问题调整为：
+- [更新日志](CHANGELOG.md) · [文档索引](docs/README.md)
+- [第三方组件](docs/THIRD_PARTY_NOTICES.md) · [校验值](docs/releases/checksums/v1.5.0.txt)
 
-```text
-普通 Index：
-HDD 24 workers
-SSD 32 workers
-
-最后 64 个 Index：
-最多 4 workers
-Keep-Alive = false
-Timeout = 10 秒
-Retry = 3 次
-```
-
-## 已知限制：Aria2 / 经典下载游戏
-
-05 独立下载器当前支持 FeverGames 的新版 Manifest / Index / Chunk 分发链。
-
-部分游戏仍由 FeverGames 使用 **Aria2 / 经典下载方式**。这类游戏不能使用 05 独立下载器，请使用 FeverGames 平台自身的下载功能。
-
-如果当前 FeverGames 前端仍能被安全识别并修补，优先运行 `01_一键安装.cmd`，继续使用平台原生下载。只有在前端新版布局暂时无法通过安全验证、无法修补时，05 才是主要备用方案。
-
-## 已验证前端布局
-
-```text
-1.18.42.12 / layout A
-1.18.42.14 / layout A
-1.18.42.14 / layout B
-1.18.43.22 / layout A
-1.18.44.2 / layout A
-```
-
-## 源码
-
-v1.4.1 的发布构建脚本与源码说明保存在 `tools/build_v1.4.1_release.py` 与 `src/v1.4.1/`；其下载核心基于 v1.4.0 精确源码快照与 2026-09-30 已验证补丁可复现构建。
-
-源码快照排除了第三方 `libzstd.dll` 二进制；普通用户请使用 GitHub Release ZIP。
-
-## 安全与回滚
-
-- 修改 FeverGames 程序目录前请完全退出 FeverGames，包括托盘；
-- 完整补丁会先建立原版回滚备份；
-- `03_恢复官方文件.cmd` 可恢复补丁安装前的官方文件；
-- 公开反馈时不要上传 PRIVATE Manifest response、AES key、Token / Cookie、deviceId / uid、sig / secKey 等账号或临时鉴权信息。
-
-## 文档
-
-- [兼容性记录](docs/COMPATIBILITY.md)
-- [系统环境要求](docs/ENVIRONMENT.md)
-- [技术说明](docs/TECHNICAL.md)
-- [更新日志](CHANGELOG.md)
-- [v1.4.2 Release Notes](docs/releases/v1.4.2.md)
-- [第三方组件说明](docs/THIRD_PARTY_NOTICES.md)
-
-## License
-
-项目自行编写的代码、脚本和文档采用 [MIT License](LICENSE)。Zstandard / libzstd 按其 BSD License 条款使用和再分发，详见第三方组件说明。
-
-## 源码 ZIP 与正式包的区别
-
-仓库根目录的 `01_Zero_Start_One_Click_Install.cmd` 是**历史源码引导脚本**，不代表当前 v1.4.2 发布包。误下载 GitHub `Code → Download ZIP` 的用户请改从 [Releases](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/latest) 下载。历史源码中的 Base64 压缩源文件已恢复到可解码版本；不建议用旧源码构建流程代替当前正式发布包。
+项目自行编写的代码、脚本与文档采用 [MIT License](LICENSE)。Zstandard/libzstd 按其 BSD 条款再分发，见包内及仓库中的许可文本。

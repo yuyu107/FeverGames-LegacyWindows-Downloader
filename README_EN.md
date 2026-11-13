@@ -1,17 +1,35 @@
 # FeverGames Legacy Windows Downloader
 
-> **Download the ready-to-use [v1.4.2 Release ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.4.2/FGWin7_v1.4.2.zip). Do NOT use GitHub's Code → Download ZIP for installation.** That downloads source code, not the stable package. The release ZIP contains Chinese launchers including `01_一键安装.cmd` and `05_独立下载_检查更新与修复.cmd`.
+Community download compatibility support for **Windows 7 SP1 x64**. Current stable release: **v1.5.0**.
 
-Community compatibility support for the FeverGames download pipeline on **Windows 7 SP1 x64**.
+**Download the [ready-to-use v1.5.0 ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.5.0/FGWin7_v1.5.0.zip).** GitHub's Code → Download ZIP downloads repository sources, not the release installer.
 
-Current stable release: **v1.4.2**.
+## Getting started
 
-- [Download v1.4.2](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/tag/v1.4.2)
-- [Changelog](CHANGELOG.md)
-- [v1.4.2 Release Notes](docs/releases/v1.4.2.md)
+1. Exit FeverGames completely, including the tray client and `downloadIPC.exe`.
+2. Fully extract the release ZIP into a writable folder.
+3. Run `01_一键安装.cmd`. It detects the installation, validates files, saves backups and applies the frontend and official Go downloader patches without an INSTALL prompt.
+4. Use FeverGames normally to download, update or repair games. Elevation is requested only if the write check fails.
 
-v1.4.2 includes support for a verified FeverGames 1.18.45.8 frontend layout and Auto Profile v2, while retaining v1.4.1 legacy GZip download compatibility and the base App ID selector. The default App ID on Enter is 81 (Minecraft Bedrock cross-platform edition). Experimental GamePicker list/online search is not included.
+## Download paths
 
-The `01_Zero_Start_One_Click_Install.cmd` in the GitHub source tree is a **historical developer bootstrap**, NOT the v1.4.2 installer. It now requires typing `DEV` before running. Historical compressed source has been restored to a decodable revision.
+| Path | Implementation and requirements |
+| --- | --- |
+| Platform downloads after 01/06 | Patched official Go downloader. The installer uses WSH, MSXML3/6, ADODB.Stream and certutil; no PowerShell, Python or C# compilation is needed. |
+| 05 standalone download/update/repair | Preserves the v1.4.2 PowerShell/C# implementation, requiring PowerShell, a compatible .NET C# compiler and bundled `app/libzstd.dll`. Enter defaults to App ID 81. |
 
-The standalone downloader supports newer Manifest/Index/Chunk distribution flows; games using Aria2/classic downloads still require the official FeverGames client. This project helps with downloads, not the game's own OS compatibility.
+05 supports the Manifest/Index/Chunk pipeline, including Zstd and legacy AES-CTR/GZip. Aria2/classic downloads should use the platform. The standalone core has not been replaced with the official Go core.
+
+Frontend detection uses exact profiles followed by strict Auto Profile v2 structural checks. Go detection supports known builds and identical program bodies with different signatures; recompiled Go builds still require adaptation. Future-version compatibility is not guaranteed.
+
+The Go approach passed download, pause/resume, restart continuation and repair tests on Win7. RC5 also patched and downloaded successfully on a physical Win7 machine. The final package retains those patch algorithms; its new conditional-elevation flow has not completed a further Win7 runtime regression test.
+
+Backups are stored in `.FGWin7_150_Backup` under the client version folder. Use 02 for status, 03 for restoration, 04 for diagnostics and 06 for Go-only patching. Modified EXEs no longer retain a valid original signature. Compatibility of each downloaded game itself is outside this project's scope.
+
+The repository's root English CMD scripts and `scripts/current/` are historical developer paths, not the v1.5.0 installer.
+
+- [Chinese README](README.md)
+- [Release notes](docs/releases/v1.5.0.md)
+- [Report an issue](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/issues/new/choose)
+- [Feedback guide](docs/FEEDBACK.md)
+- [Source index](src/README.md)

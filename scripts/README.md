@@ -1,8 +1,12 @@
 # Scripts
 
-仓库根目录只保留普通用户需要运行的 CMD 入口；PowerShell 实现收在这里。
+当前正式版为 **v1.5.0**。平台补丁入口改用正式 ZIP 中的 `FG150_*.vbs/.cmd`，不依赖 PowerShell 或 .NET 编译。
 
-- `current/`：当前 v1.3.x 正式版使用的脚本。根目录的 `01_...cmd` ～ `05_...cmd` 会调用这里的文件。
-- `legacy-v1.2/`：历史 v1.2 脚本，仅用于代码追溯、旧安装恢复或回归参考，不是当前推荐入口。
+本目录保留历史脚本：
 
-普通用户应优先从 GitHub Releases 下载正式 ZIP，不需要直接进入本目录运行 PowerShell 文件。
+- `current/`：较早 v1.3.x 源码引导路径使用的 PowerShell 实现，名称沿用历史结构，**不表示它是 v1.5.0 安装器**。
+- `legacy-v1.2/`：更早的历史实现，用于追溯和旧环境研究。
+
+根目录英文 CMD 也属于历史开发入口。普通用户请下载 [v1.5.0 正式 ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.5.0/FGWin7_v1.5.0.zip)，运行其中的中文编号入口。
+
+05 独立下载器仍保留 PowerShell/C#，不要将其依赖推断为平台补丁依赖。见[环境要求](../docs/ENVIRONMENT.md)。

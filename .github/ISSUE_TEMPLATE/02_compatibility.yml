@@ -1,0 +1,66 @@
+name: 新版本/布局适配
+description: 平台更新后无法识别前端布局、Go 构建或文件哈希
+title: "[适配] FeverGames "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        同一版本号可能包含不同布局或签名。请先提供版本和只读检查结果，不要删除备份、跳过校验或反复重装。
+        v1.5.0 可识别已知 Go 主体的签名变体，但尚不支持任意重新编译的 Go 构建。
+        请勿公开上传 Token、Cookie、AES key、PRIVATE Manifest 响应、临时鉴权链接或完整官方 EXE。需要二进制样本时先在 Issue 中讨论提交方式。
+  - type: input
+    id: patch_version
+    attributes:
+      label: 补丁版本与 ZIP 文件名
+      placeholder: v1.5.0 / FGWin7_v1.5.0.zip
+    validations:
+      required: true
+  - type: input
+    id: client_version
+    attributes:
+      label: 发烧游戏版本及系统环境
+      placeholder: 1.18.xx.xx；Windows 7 SP1 x64；实体机 / 虚拟机
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: 未识别的部分
+      options:
+        - 前端布局
+        - 官方 Go 下载组件
+        - 两者均未识别
+        - 不清楚
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: 02 检查状态的完整输出或安装器报错
+      description: 如果检查本身无法运行，请填写遇到的错误；不必先完成安装。
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: frontend_sha
+    attributes:
+      label: FeverGamesInstaller.exe 的 SHA-256（可选）
+      description: 可从状态检查或诊断摘要获取；请注明它是原版还是已修补文件。
+  - type: input
+    id: go_sha
+    attributes:
+      label: downloadIPC.exe 的 SHA-256（可选）
+      description: 可从状态检查或诊断摘要获取；请注明它是原版还是已修补文件。
+  - type: textarea
+    id: source
+    attributes:
+      label: 官方文件来源与补丁历史
+      description: 注明全新安装、平台自动更新或从备份恢复；是否曾使用其他兼容工具。不清楚可以直接写明。
+      placeholder: 通过官方客户端自动更新；之前使用 v1.5.0；更新前能正常下载，更新后提示未知 Go 构建。
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 脱敏诊断或其他信息（可选）
+      description: 可附 04 生成的诊断摘要、版本截图或官方更新说明链接。无须公开完整 EXE。

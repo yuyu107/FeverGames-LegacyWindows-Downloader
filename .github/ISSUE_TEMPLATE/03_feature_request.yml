@@ -1,0 +1,41 @@
+name: 功能建议
+description: 提出交互、诊断、下载功能或兼容策略方面的改进
+title: "[建议] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        已发生的错误请使用“故障反馈”；新客户端不能识别请使用“新版本/布局适配”。
+        请描述实际使用场景和希望改善的行为，不需要提供代码方案。
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 涉及范围
+      options:
+        - 安装、自动识别或备份恢复
+        - 发烧游戏平台内下载
+        - 05 独立下载器
+        - 中文界面或操作流程
+        - 诊断、文档或反馈
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与遇到的不便
+      placeholder: 目前在哪个操作中遇到不便，影响是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: 希望增加或调整的行为
+      placeholder: 希望执行什么操作后出现什么结果？
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 目前的替代方法或补充说明（可选）
+      description: 可以补充界面示意、相关链接或系统限制；请移除截图中的个人信息。

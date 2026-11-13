@@ -2,27 +2,23 @@
 
 ## Zstandard / libzstd.dll
 
-- 项目：Zstandard
-- v1.3.5 起使用版本：**1.5.6**
-- 上游仓库：https://github.com/facebook/zstd
+v1.5.0 的 **05 独立下载器**继续使用从 v1.4.2 正式包原样保留的 Zstandard 1.5.6 x64 `app/libzstd.dll`。平台补丁安装不再将此 DLL 作为自制 downloadIPC 的依赖复制到平台目录。
+
+- 上游项目：[facebook/zstd](https://github.com/facebook/zstd)
 - 版权所有：Meta Platforms, Inc. and affiliates，以及相关贡献者
+- 再分发选择：BSD License
+- 完整许可：[Zstandard_v1.5.6_LICENSE.txt](third_party/Zstandard_v1.5.6_LICENSE.txt)，正式 ZIP 内也包含 `ZSTD_LICENSE.txt`
 
-Zstandard 官方仓库采用 **BSD OR GPLv2** 双许可证。FeverGames Legacy Windows Downloader 的 v1.3.6 Release 对 `libzstd.dll` 选择 **BSD License** 条款进行再分发。
+| 项目 | 值 |
+| --- | --- |
+| 正式包路径 | app/libzstd.dll |
+| 版本 | 1.5.6 |
+| 架构 | x86-64 |
+| 大小 | 1254833 字节 |
+| SHA-256 | `4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1` |
 
-完整 BSD License 文本见：
+## 官方组件
 
-[`docs/third_party/Zstandard_v1.5.6_LICENSE.txt`](third_party/Zstandard_v1.5.6_LICENSE.txt)
+FeverGamesInstaller.exe、官方 Go 版 downloadIPC.exe 及 OrbitSDK.dll 属于官方程序。本项目发布包不包含其完整 EXE；通过本机原始文件生成兼容补丁，修改后的 EXE 原有数字签名会失效。
 
-v1.3.6 正式 Release ZIP 中的二进制：
-
-```text
-File: core\tools\libzstd.dll
-Version: 1.5.6
-Architecture: x86-64
-Size: 1254833 bytes
-SHA-256: 4d540a749823e5b8a6eb56deca5715150442d45f1e8863dd185fc31002b9b5d1
-```
-
-该 DLL 来自 Zstandard v1.5.6 Windows x64 发布包。
-
-本项目自身代码、脚本与文档仍按仓库根目录的 MIT License 发布；第三方组件遵循各自许可证。
+项目自行编写的代码、脚本与文档采用仓库根目录的 [MIT License](../LICENSE)。第三方组件遵循各自许可证。

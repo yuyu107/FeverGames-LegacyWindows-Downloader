@@ -1,0 +1,82 @@
+name: 故障反馈
+description: 安装、提权、下载、续传、更新、修复或恢复官方文件时出现异常
+title: "[故障] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请尽量提供完整输出，不清楚的项目可以写“不清楚”。客户端更新后提示未知布局/未知 Go 构建，请选择“新版本/布局适配”。
+        Issue 和附件公开可见。请删除 Token、Cookie、AES key、PRIVATE Manifest 响应、设备标识及临时鉴权链接；不要上传完整官方 EXE 或整个安装目录。
+        反馈指南：https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/blob/main/docs/FEEDBACK.md
+  - type: input
+    id: patch_version
+    attributes:
+      label: 补丁版本与安装包来源
+      description: 填写版本及 ZIP 名称，注明来自 Releases、源码 ZIP 或其他位置。
+      placeholder: v1.5.0，FGWin7_v1.5.0.zip，GitHub Releases
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: 系统版本、位数与运行环境
+      placeholder: Windows 7 SP1 x64，实体机 / VMware 虚拟机；原版 / 精简版
+    validations:
+      required: true
+  - type: input
+    id: client_version
+    attributes:
+      label: 发烧游戏版本与版本目录
+      placeholder: '1.18.45.8；D:\Program Files\FeverGames\1.18.45.8'
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: 出问题的入口或下载路径
+      options:
+        - 00 安装包自检
+        - 01 一键安装
+        - 02 检查状态
+        - 03 恢复官方文件
+        - 04 收集诊断
+        - 05 独立下载、更新与修复
+        - 06 仅修补 downloadIPC
+        - 修补后在发烧游戏平台内下载、更新或修复
+        - 下载完成后启动游戏本体
+        - 其他或不清楚
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 操作步骤、预期结果与实际结果
+      description: 说明在哪一步失败、能否重复；暂停恢复问题请注明是否重启客户端或系统。
+      placeholder: |
+        操作步骤：
+        预期结果：
+        实际结果：
+        是否每次出现：
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: 游戏名称、App ID 与出错阶段（下载问题填写）
+      placeholder: App ID 81；Index / Chunk / 构建 / 校验阶段；停滞约多久
+  - type: textarea
+    id: logs
+    attributes:
+      label: 完整输出与退出码
+      description: 复制从窗口标题到退出码的完整文字。提权异常请同时提供提权前后输出；无法复制时可附脱敏截图。
+      render: text
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 状态检查或诊断摘要（可选）
+      description: 可粘贴 02 的输出，或将 04 生成的脱敏诊断文件作为附件拖入此处。不要为填表删除备份或强行跳过校验。
+  - type: textarea
+    id: previous_state
+    attributes:
+      label: 安装历史与已经尝试的方法（可选）
+      placeholder: 全新安装 / 之前用过哪个补丁 / 是否恢复过官方文件 / 平台是否更新 / 是否已退出托盘进程

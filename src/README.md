@@ -1,4 +1,15 @@
-# downloader sources
+# Source index
+
+Current stable release: **v1.5.0**.
+
+The v1.5.0 release ZIP contains the readable `FG150_*.vbs/.cmd` platform installer and its patch manifests, plus the retained v1.4.2 standalone `app/core.cs`, `main.ps1` and `run.ps1`. It does not bundle the official FeverGames EXEs.
+
+The repository's root English CMD scripts and `scripts/current/` remain historical bootstrap paths. They do not reproduce the new v1.5.0 installer. The builders below reproduce their named historical versions only.
+
+Normal users should use the [v1.5.0 release ZIP](https://github.com/yuyu107/FeverGames-LegacyWindows-Downloader/releases/download/v1.5.0/FGWin7_v1.5.0.zip). Repository snapshots omit third-party DLL binaries; the release includes the retained `app/libzstd.dll` for standalone 05 under its BSD license.
+
+## Historical source snapshots
+
 
 The repository does not commit precompiled downloader executables or the third-party `libzstd.dll` binary.
 
